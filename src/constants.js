@@ -20,4 +20,6 @@ export const MANIFEST_ENDPOINT = "/manifests/"
 
 export const TAGS_ENDPOINT = "/tags/list"
 
+export const BLOB_ENDPOINT = "/blobs/"
+
 export const DOCKER_API_BASE = "https://registry.docker.com/v2/"
