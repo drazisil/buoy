@@ -5,16 +5,24 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "xo"
   },
   "keywords": [],
   "author": "",
   "license": "AGPL-3.0-only",
   "devDependencies": {
     "@types/node": "18.7.13",
-    "typescript": "4.8.2"
+    "typescript": "4.8.2",
+    "xo": "^0.52.2"
   },
   "volta": {
     "node": "18.8.0"
+  },
+  "xo": {
+    "ignores": ["jsdoc-template"],
+    "rules": {
+      "n/prefer-global/process": ["error", "always"],
+      "n/prefer-global/buffer": ["error", "always"]
+    }
   }
 }
