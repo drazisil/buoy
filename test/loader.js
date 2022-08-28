@@ -1,5 +1,5 @@
 // Buoy is a image layer scanner
-// Copyright (C) 2000  Drazi Crendraven
+// Copyright (C) 2022  Drazi Crendraven
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published
