@@ -5,13 +5,16 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "docs": "rm -rf out && ./node_modules/.bin/jsdoc -t jsdoc-template -c jsdocconf.json -R README.md -r .",
+    "test": "c8 -x jsdoc-template -x out -x test -r text -r cobertura --all node test/loader.js"
   },
   "keywords": [],
   "author": "",
   "license": "AGPL-3.0-only",
   "devDependencies": {
     "@types/node": "18.7.13",
+    "c8": "7.12.0",
+    "jsdoc": "3.6.11",
     "typescript": "4.8.2"
   },
   "volta": {
