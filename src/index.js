@@ -14,36 +14,39 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import { buildURL } from '../lib/containerRegistryClient.js';
-import { DockerRegistryClient } from './dockerRegistryReader.js';
-
-
-
+import {buildURL} from '../lib/container-registry-client.js';
+import {DockerRegistryClient} from './docker-registry-reader.js';
 
 if (process.argv.length < 3) {
-    throw new Error("Please pass the image name!")
+	throw new Error('Please pass the image name!');
 }
 
-const imageName = process.argv[2]
+const imageName = process.argv[2];
 
-console.log(`Image name: ${imageName}`)
+console.log(`Image name: ${imageName}`);
 
-const registry = new DockerRegistryClient("codecov/enterprise-web")
+const registry = new DockerRegistryClient('codecov/enterprise-web');
 
-console.log(`Using host: ${registry.host}`)
+console.log(`Using host: ${registry.host}`);
 
-console.log(`Using version: ${registry.version}`)
+console.log(`Using version: ${registry.version}`);
 
-console.log(`Valid token: ${registry.isTokenValid(imageName)}`)
+console.log(`Valid token: ${registry.isTokenValid(imageName)}`);
 
-const url = buildURL(registry.host, registry.version, "codecov/enterprise-web", "tags/list", "")
+const url = buildURL({
+	host: registry.host,
+	version: registry.version,
+	namespace: 'codecov/enterprise-web',
+	endpoint: 'tags/list',
+	reference: '',
+});
 
-console.log(`Request URL: ${url}`)
+console.log(`Request URL: ${url}`);
 
-const response = await registry.callRaw(url)
+const response = await registry.callRaw(url);
 
-console.log(`Content type: ${response.headers.get("content-type")}`)
+console.log(`Content type: ${response.headers.get('content-type')}`);
 
-console.dir(response, { depth: 1})
+console.dir(response, {depth: 1});
 
-console.log(`Valid token: ${registry.isTokenValid(imageName)}`)
+console.log(`Valid token: ${registry.isTokenValid(imageName)}`);

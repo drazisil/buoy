@@ -2,11 +2,13 @@
   "name": "buoy",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
   "type": "module",
   "scripts": {
     "docs": "rm -rf out && ./node_modules/.bin/jsdoc -t jsdoc-template -c jsdocconf.json -R README.md -r .",
-    "test": "xo && echo \"Error: no test specified\" && exit 1"
+    "test": "xo && c8 -r text -r cobertura --all node test/loader.js"
   },
   "keywords": [],
   "author": "",
@@ -22,10 +24,18 @@
     "node": "18.8.0"
   },
   "xo": {
-    "ignores": ["jsdoc-template"],
+    "ignores": [
+      "jsdoc-template"
+    ],
     "rules": {
-      "n/prefer-global/process": ["error", "always"],
-      "n/prefer-global/buffer": ["error", "always"]
+      "n/prefer-global/process": [
+        "error",
+        "always"
+      ],
+      "n/prefer-global/buffer": [
+        "error",
+        "always"
+      ]
     }
   }
 }
