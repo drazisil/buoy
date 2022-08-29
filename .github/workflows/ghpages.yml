@@ -12,14 +12,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Build
-        uses: andstor/jsdoc-action@v1
-        with:
-          source_dir: .
-          output_dir: ./out
-          config_file: jsdocconf.json
-          template: jsdoc-template
-          front_page: README.md
+      - name: Build Docs
+        run: npm run docs
 
       - name: Setup Pages
         uses: actions/configure-pages@v2
