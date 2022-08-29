@@ -14,4 +14,5 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import "./index.js"
+// eslint-disable-next-line import/no-unassigned-import
+import './index.js';

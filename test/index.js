@@ -14,11 +14,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import assert from "assert"
-import { buildURL, checkHostURL, checkImageName } from "../lib/containerRegistryClient.js"
+import assert from 'node:assert';
+import {buildURL, checkHostURL, checkImageName} from '../lib/container-registry-client.js';
 
-assert.equal(buildURL("https://host.local", "v6", "test/image", "tags", "foo"), "https://https://host.local/v6/test/image/tags/foo")
+assert.equal(buildURL({
+	host: 'https://host.local',
+	version: 'v6',
+	namespace: 'test/image',
+	endpoint: 'tags',
+	reference: 'foo'}), 'https://https://host.local/v6/test/image/tags/foo');
 
-assert.throws(() => { checkHostURL("https://local")}, /protocol/)
+assert.throws(() => {
+	checkHostURL('https://local');
+}, /protocol/);
 
-assert.throws(() => { checkImageName("")}, /not set/)
+assert.throws(() => {
+	checkImageName('');
+}, /not set/);
