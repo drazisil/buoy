@@ -2,19 +2,40 @@
   "name": "buoy",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "docs": "rm -rf out && ./node_modules/.bin/jsdoc -t jsdoc-template -c jsdocconf.json -R README.md -r .",
+    "test": "xo && c8 -r text -r cobertura --all node test/loader.js"
   },
   "keywords": [],
   "author": "",
   "license": "AGPL-3.0-only",
   "devDependencies": {
     "@types/node": "18.7.13",
-    "typescript": "4.8.2"
+    "c8": "7.12.0",
+    "jsdoc": "3.6.11",
+    "typescript": "4.8.2",
+    "xo": "^0.52.2"
   },
   "volta": {
     "node": "18.8.0"
+  },
+  "xo": {
+    "ignores": [
+      "jsdoc-template"
+    ],
+    "rules": {
+      "n/prefer-global/process": [
+        "error",
+        "always"
+      ],
+      "n/prefer-global/buffer": [
+        "error",
+        "always"
+      ]
+    }
   }
 }
