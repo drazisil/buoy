@@ -16,6 +16,10 @@
 
 import {ContainerRegistryClient} from '../lib/container-registry-client.js';
 
+/**
+ * @extends {ContainerRegistryClient}
+ * @classdesc A wrapper class around {@link ContainerRegistryClient}
+ */
 export class DockerRegistryClient extends ContainerRegistryClient {
 	/**
      *

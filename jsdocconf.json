@@ -1,7 +1,7 @@
 {
     "source": {
         "includePattern": ".+\\.js(doc|x)?$",
-        "excludePattern": "(^|\\/|\\\\)_|node_modules"
+        "excludePattern": "(^|\\/|\\\\)_|node_modules|jsdoc-template"
     },
     "templates": {
         "mainpagetitle": "cyborg"
