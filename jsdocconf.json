@@ -1,0 +1,12 @@
+{
+    "source": {
+        "includePattern": ".+\\.js(doc|x)?$",
+        "excludePattern": "(^|\\/|\\\\)_|node_modules"
+    },
+    "templates": {
+        "mainpagetitle": "cyborg"
+    },
+    "opts": {
+        "mainpagetitle": "Buoy"
+    }
+}
