@@ -14,39 +14,5 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import {buildURL} from '../lib/container-registry-client.js';
-import {DockerRegistryClient} from './docker-registry-reader.js';
-
-if (process.argv.length < 3) {
-	throw new Error('Please pass the image name!');
-}
-
-const imageName = process.argv[2];
-
-console.log(`Image name: ${imageName}`);
-
-const registry = new DockerRegistryClient('codecov/enterprise-web');
-
-console.log(`Using host: ${registry.host}`);
-
-console.log(`Using version: ${registry.version}`);
-
-console.log(`Valid token: ${registry.isTokenValid(imageName)}`);
-
-const url = buildURL({
-	host: registry.host,
-	version: registry.version,
-	namespace: 'codecov/enterprise-web',
-	endpoint: 'tags/list',
-	reference: '',
-});
-
-console.log(`Request URL: ${url}`);
-
-const response = await registry.callRaw(url);
-
-console.log(`Content type: ${response.headers.get('content-type')}`);
-
-console.dir(response, {depth: 1});
-
-console.log(`Valid token: ${registry.isTokenValid(imageName)}`);
+export {buildURL, checkHostURL, checkImageName} from '../lib/container-registry-client.js';
+export {DockerRegistryClient} from './docker-registry-reader.js';
