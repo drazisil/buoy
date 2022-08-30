@@ -54,9 +54,9 @@ console.log(`Request URL: ${url}`);
 
 const apiResponse = await registry.callRaw(url);
 
-console.log(`Content type: ${apiResponse.headers.get('content-type')}`);
+console.log(`Content type: ${apiResponse.headers['content-type']}`);
 
-const {tags} = await apiResponse.json();
+const {tags} = await apiResponse.body.json();
 
 if (typeof tags === 'undefined') {
 	console.error('No tags were found');
