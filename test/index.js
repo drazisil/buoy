@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import assert from 'node:assert';
-import {buildURL, checkHostURL, checkImageName} from '../lib/container-registry-client.js';
+import {buildURL, checkHostURL, checkImageName} from '../src/index.js';
 
 assert.equal(buildURL({
 	host: 'https://host.local',
