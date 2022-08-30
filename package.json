@@ -37,5 +37,8 @@
         "always"
       ]
     }
+  },
+  "dependencies": {
+    "undici": "5.10.0"
   }
 }
