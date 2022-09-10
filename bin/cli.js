@@ -80,7 +80,7 @@ const tagSelect = await prompts({
 const {selectedTag} = tagSelect;
 
 if (typeof selectedTag === 'undefined') {
-	console.error('You didn\'t selext a tag');
+	console.error('You didn\'t select a tag');
 	process.exit(1);
 }
 
