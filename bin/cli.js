@@ -15,8 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import { writeFile } from 'node:fs/promises';
-import { gunzipSync } from 'node:zlib';
+import {mkdirSync} from 'node:fs';
 import prompts from 'prompts';
 import {buildURL, DockerRegistryClient} from '../src/index.js';
 
@@ -106,19 +105,19 @@ apiResponse = await registry.callRaw(url);
 
 console.log(`Content type: ${apiResponse.headers['content-type']}`);
 
-if (apiResponse.headers['content-type'] !== "application/vnd.docker.distribution.manifest.v1+prettyjws") {
-	throw new Error('Not able to pull a signed manifest')
+if (apiResponse.headers['content-type'] !== 'application/vnd.docker.distribution.manifest.v1+prettyjws') {
+	throw new Error('Not able to pull a signed manifest');
 }
 
-const { fsLayers, history} = await apiResponse.body.json();
+const {fsLayers, history} = await apiResponse.body.json();
 
 const manifest = {
 	fsLayers,
-	history
-}
+	history,
+};
 
 if (manifest.fsLayers.length !== manifest.history.length) {
-	throw new Error('Mismatched number of history entries')
+	throw new Error('Mismatched number of history entries');
 }
 
 const layerChoices = [];
@@ -127,44 +126,18 @@ for (const layer of manifest.fsLayers) {
 	layerChoices.push({title: layer.blobSum});
 }
 
-for (let index = 0; index < layerChoices.length; index++) {
+layerChoices.reverse()
 
-	const { title: layerSHA} = layerChoices[index]
-	const { v1Compatibility: historyJSON } = manifest.history[index]
+mkdirSync(`tmp/${registry.getImageName()}`, {recursive: true});
 
-	url = buildURL({
-		host: registry.getHost(),
-		version: registry.getVersion(),
-		namespace: registry.getImageName(),
-		endpoint: 'blobs',
-		reference: layerSHA,
-	});
-	
-	console.log(`Request URL: ${url}`);
-	
-	apiResponse = await registry.callRaw(url);
-	
-	console.log(`Content type: ${apiResponse.headers['content-type']}`);
-	
-	const bodyBits = Buffer.from(await apiResponse.body.arrayBuffer())
-	
-	if (typeof bodyBits  === "undefined") {
-		throw new Error("Body has no content!")
-	}
-	
-	const bodyBuffer = Buffer.from(bodyBits)
-	
-	console.log(bodyBuffer.byteOffset)
-	
-	await writeFile(`tmp/${index}_${layerSHA}.gz`, bodyBuffer)
-	
-	await writeFile(`tmp/${index}_${layerSHA}.history.json`, historyJSON)
-	
-	const unGZippedBlob = gunzipSync(bodyBuffer)
-	
-	console.log(unGZippedBlob.byteLength)
-	
-	
+/** @type {Promise<void>[]} */
+const results = [];
+
+for (const [index, {title: layerSHA}] of layerChoices.entries()) {
+	results.push(registry.extractLayer(manifest, index, layerSHA, tagChoices[selectedTag].title));
 }
 
+await Promise.all(results);
+
 console.log(`Valid token: ${registry.isTokenValid(registry.getImageName())}`);
+
