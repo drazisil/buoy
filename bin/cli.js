@@ -15,44 +15,50 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import { writeFile } from 'node:fs/promises';
+import { gunzipSync } from 'node:zlib';
 import prompts from 'prompts';
 import {buildURL, DockerRegistryClient} from '../src/index.js';
 
 const response = await prompts({
 	type: 'text',
-	name: 'imageName',
+	name: 'imageNameChoice',
 	message: 'Enter the image name (org/name):',
-	initial: 'codecov/enterprise-web',
+	initial: '',
 });
 
-const {imageName} = response;
+const {imageNameChoice} = response;
 
-if (typeof imageName === 'undefined') {
+if (typeof imageNameChoice === 'undefined') {
 	console.error('Please pass the image name!');
 	process.exit(1);
 }
 
-console.log(`Image name: ${imageName}`);
+if (imageNameChoice.includes(':')) {
+	throw new Error('Pass only the org/name, not the tag.');
+}
 
-const registry = new DockerRegistryClient(imageName);
+console.log(`Image name: ${imageNameChoice}`);
+
+const registry = new DockerRegistryClient(imageNameChoice);
 
 console.log(`Using host: ${registry.getHost()}`);
 
 console.log(`Using version: ${registry.getVersion()}`);
 
-console.log(`Valid token: ${registry.isTokenValid(imageName)}`);
+console.log(`Valid token: ${registry.isTokenValid(registry.getImageName())}`);
 
-const url = buildURL({
+let url = buildURL({
 	host: registry.getHost(),
 	version: registry.getVersion(),
-	namespace: 'codecov/enterprise-web',
+	namespace: registry.getImageName(),
 	endpoint: 'tags/list',
 	reference: '',
 });
 
 console.log(`Request URL: ${url}`);
 
-const apiResponse = await registry.callRaw(url);
+let apiResponse = await registry.callRaw(url);
 
 console.log(`Content type: ${apiResponse.headers['content-type']}`);
 
@@ -86,4 +92,79 @@ if (typeof selectedTag === 'undefined') {
 
 console.log(`Selected tag: ${tagChoices[selectedTag].title}`);
 
-console.log(`Valid token: ${registry.isTokenValid(imageName)}`);
+url = buildURL({
+	host: registry.getHost(),
+	version: registry.getVersion(),
+	namespace: registry.getImageName(),
+	endpoint: 'manifests',
+	reference: tagChoices[selectedTag].title,
+});
+
+console.log(`Request URL: ${url}`);
+
+apiResponse = await registry.callRaw(url);
+
+console.log(`Content type: ${apiResponse.headers['content-type']}`);
+
+if (apiResponse.headers['content-type'] !== "application/vnd.docker.distribution.manifest.v1+prettyjws") {
+	throw new Error('Not able to pull a signed manifest')
+}
+
+const { fsLayers, history} = await apiResponse.body.json();
+
+const manifest = {
+	fsLayers,
+	history
+}
+
+if (manifest.fsLayers.length !== manifest.history.length) {
+	throw new Error('Mismatched number of history entries')
+}
+
+const layerChoices = [];
+
+for (const layer of manifest.fsLayers) {
+	layerChoices.push({title: layer.blobSum});
+}
+
+for (let index = 0; index < layerChoices.length; index++) {
+
+	const { title: layerSHA} = layerChoices[index]
+	const { v1Compatibility: historyJSON } = manifest.history[index]
+
+	url = buildURL({
+		host: registry.getHost(),
+		version: registry.getVersion(),
+		namespace: registry.getImageName(),
+		endpoint: 'blobs',
+		reference: layerSHA,
+	});
+	
+	console.log(`Request URL: ${url}`);
+	
+	apiResponse = await registry.callRaw(url);
+	
+	console.log(`Content type: ${apiResponse.headers['content-type']}`);
+	
+	const bodyBits = Buffer.from(await apiResponse.body.arrayBuffer())
+	
+	if (typeof bodyBits  === "undefined") {
+		throw new Error("Body has no content!")
+	}
+	
+	const bodyBuffer = Buffer.from(bodyBits)
+	
+	console.log(bodyBuffer.byteOffset)
+	
+	await writeFile(`tmp/${index}_${layerSHA}.gz`, bodyBuffer)
+	
+	await writeFile(`tmp/${index}_${layerSHA}.history.json`, historyJSON)
+	
+	const unGZippedBlob = gunzipSync(bodyBuffer)
+	
+	console.log(unGZippedBlob.byteLength)
+	
+	
+}
+
+console.log(`Valid token: ${registry.isTokenValid(registry.getImageName())}`);
