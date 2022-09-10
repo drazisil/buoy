@@ -36,15 +36,15 @@ console.log(`Image name: ${imageName}`);
 
 const registry = new DockerRegistryClient(imageName);
 
-console.log(`Using host: ${registry.host}`);
+console.log(`Using host: ${registry.getHost()}`);
 
-console.log(`Using version: ${registry.version}`);
+console.log(`Using version: ${registry.getVersion()}`);
 
 console.log(`Valid token: ${registry.isTokenValid(imageName)}`);
 
 const url = buildURL({
-	host: registry.host,
-	version: registry.version,
+	host: registry.getHost(),
+	version: registry.getVersion(),
 	namespace: 'codecov/enterprise-web',
 	endpoint: 'tags/list',
 	reference: '',
