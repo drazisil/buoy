@@ -38,6 +38,6 @@ jobs:
         gpgv codecov.SHA256SUM.sig codecov.SHA256SUM
         shasum -a 256 -c codecov.SHA256SUM
         chmod +x codecov 
-        ./codecov -v -Z
+        ./codecov -v -Z -n node_${{ matrix.node-version }}
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
