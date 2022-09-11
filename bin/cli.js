@@ -130,7 +130,6 @@ layerChoices.reverse();
 
 mkdirSync(`tmp/${registry.getImageName()}`, {recursive: true});
 
-/** @type {Promise<void>[]} */
 const results = [];
 
 for (const [index, {title: layerSHA}] of layerChoices.entries()) {
