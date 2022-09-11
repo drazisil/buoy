@@ -16,28 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import {mkdirSync} from 'node:fs';
-import prompts from 'prompts';
-import {buildURL, checkImageName, DockerRegistryClient} from '../src/index.js';
+import {checkImageName, DockerRegistryClient} from '../src/index.js';
+import {getImageNameFromUser} from '../src/get-image-name-from-user.js';
+import {getTagfromUser} from '../src/get-tag-from-user.js';
 
-const response = await prompts({
-	type: 'text',
-	name: 'imageNameChoice',
-	message: 'Enter the image name (org/name):',
-	initial: '',
-});
+const imageName = await getImageNameFromUser();
 
-const {imageNameChoice} = response;
+checkImageName(imageName);
 
-if (typeof imageNameChoice === 'undefined') {
-	console.error('Please pass the image name!');
-	process.exit(1);
-}
+console.log(`Image name: ${imageName}`);
 
-checkImageName(imageNameChoice);
-
-console.log(`Image name: ${imageNameChoice}`);
-
-const registry = new DockerRegistryClient(imageNameChoice);
+const registry = new DockerRegistryClient(imageName);
 
 console.log(`Using host: ${registry.getHost()}`);
 
@@ -45,74 +34,23 @@ console.log(`Using version: ${registry.getVersion()}`);
 
 console.log(`Valid token: ${registry.isTokenValid(registry.getImageName())}`);
 
-let url = buildURL({
-	host: registry.getHost(),
-	version: registry.getVersion(),
-	namespace: registry.getImageName(),
-	endpoint: 'tags/list',
-	reference: '',
-});
+const tags = await registry.fetchImageTags();
 
-console.log(`Request URL: ${url}`);
-
-let apiResponse = await registry.callRaw(url);
-
-console.log(`Content type: ${apiResponse.headers['content-type']}`);
-
-const {tags} = await apiResponse.body.json();
-
-if (typeof tags === 'undefined') {
+if (tags.length === 0) {
 	console.error('No tags were found');
 	process.exit(1);
 }
 
+/** @type {Array<{title: string}>} */
 const tagChoices = [];
 
 for (const tag of tags) {
 	tagChoices.push({title: tag});
 }
 
-const tagSelect = await prompts({
-	type: 'select',
-	name: 'selectedTag',
-	message: 'Select a tag:',
-	choices: tagChoices,
-	initial: 1,
-});
+const selectedTag = await getTagfromUser(tagChoices);
 
-const {selectedTag} = tagSelect;
-
-if (typeof selectedTag === 'undefined') {
-	console.error('You didn\'t select a tag');
-	process.exit(1);
-}
-
-console.log(`Selected tag: ${tagChoices[selectedTag].title}`);
-
-url = buildURL({
-	host: registry.getHost(),
-	version: registry.getVersion(),
-	namespace: registry.getImageName(),
-	endpoint: 'manifests',
-	reference: tagChoices[selectedTag].title,
-});
-
-console.log(`Request URL: ${url}`);
-
-apiResponse = await registry.callRaw(url);
-
-console.log(`Content type: ${apiResponse.headers['content-type']}`);
-
-if (apiResponse.headers['content-type'] !== 'application/vnd.docker.distribution.manifest.v1+prettyjws') {
-	throw new Error('Not able to pull a signed manifest');
-}
-
-const {fsLayers, history} = await apiResponse.body.json();
-
-const manifest = {
-	fsLayers,
-	history,
-};
+const manifest = await registry.fetchImageManifestForTag(selectedTag);
 
 if (manifest.fsLayers.length !== manifest.history.length) {
 	throw new Error('Mismatched number of history entries');
@@ -131,7 +69,7 @@ mkdirSync(`tmp/${registry.getImageName()}`, {recursive: true});
 const results = [];
 
 for (const [index, {title: layerSHA}] of layerChoices.entries()) {
-	results.push(registry.extractLayer(manifest, index, layerSHA, tagChoices[selectedTag].title));
+	results.push(registry.extractLayer(manifest, index, layerSHA, selectedTag));
 }
 
 await Promise.all(results);
