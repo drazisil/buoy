@@ -126,7 +126,7 @@ for (const layer of manifest.fsLayers) {
 	layerChoices.push({title: layer.blobSum});
 }
 
-layerChoices.reverse()
+layerChoices.reverse();
 
 mkdirSync(`tmp/${registry.getImageName()}`, {recursive: true});
 
