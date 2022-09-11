@@ -11,7 +11,7 @@
   "type": "module",
   "scripts": {
     "docs": "rm -rf out && ./node_modules/.bin/jsdoc -t jsdoc-template -c jsdocconf.json --verbose -R README.md -r .",
-    "test": "xo && c8 -x jsdoc-template -x out -x test -r text -r cobertura --all node test/loader.js"
+    "test": "xo && c8 -x jsdoc-template -x out -x test -x coverage -r text -r cobertura -r html --all node test/loader.js"
   },
   "keywords": [],
   "author": "",

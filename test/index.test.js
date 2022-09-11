@@ -31,3 +31,11 @@ assert.throws(() => {
 assert.throws(() => {
 	checkImageName('');
 }, /not set/);
+
+assert.throws(() => {
+	checkImageName('test');
+}, /Pass both org and repo in the form of org\/name./);
+
+assert.throws(() => {
+	checkImageName('test/repo:ref');
+}, /Pass only the org\/name, not the tag./);

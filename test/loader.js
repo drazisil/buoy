@@ -15,4 +15,4 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // eslint-disable-next-line import/no-unassigned-import
-import './index.js';
+import './index.test.js';

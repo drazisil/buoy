@@ -17,7 +17,7 @@
 
 import {mkdirSync} from 'node:fs';
 import prompts from 'prompts';
-import {buildURL, DockerRegistryClient} from '../src/index.js';
+import {buildURL, checkImageName, DockerRegistryClient} from '../src/index.js';
 
 const response = await prompts({
 	type: 'text',
@@ -33,9 +33,7 @@ if (typeof imageNameChoice === 'undefined') {
 	process.exit(1);
 }
 
-if (imageNameChoice.includes(':')) {
-	throw new Error('Pass only the org/name, not the tag.');
-}
+checkImageName(imageNameChoice);
 
 console.log(`Image name: ${imageNameChoice}`);
 
