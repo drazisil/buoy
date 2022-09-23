@@ -4,4 +4,4 @@ coverage
 node_modules
 out
 tmp
-.log
+*.log
