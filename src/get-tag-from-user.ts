@@ -16,23 +16,35 @@
 
 import prompts from 'prompts';
 
+type TagChoice = {
+	title: string;
+};
+
+type SelectedTagChoice = {
+	selectedTag: string;
+};
+
 /**
- * Prompt the user for image name
+ *
+ * @param {Array<{title: string}>} choices
  * @returns {Promise<string>}
  */
-export async function getImageNameFromUser() {
-	const choice = await prompts({
-		type: 'text',
-		name: 'imageNameChoice',
-		message: 'Enter the image name (org/name):',
-		initial: '',
+export async function getTagfromUser(choices: Array<{title: string}>): Promise<string> {
+	const tagSelect = await prompts({
+		type: 'select',
+		name: 'selectedTag',
+		message: 'Select a tag:',
+		choices,
+		initial: 1,
 	});
 
-	const {imageNameChoice} = choice;
-
-	if (typeof imageNameChoice === 'undefined') {
-		throw new TypeError('Please pass the image name!');
+	const selectedTag = tagSelect.selectedTag as number;
+	if (typeof selectedTag === 'undefined') {
+		throw new TypeError('You didn\'t select a tag');
 	}
 
-	return imageNameChoice;
+	const selectedTagTitle = choices[selectedTag].title;
+
+	console.log(`Selected tag: ${selectedTagTitle}`);
+	return choices[selectedTag].title;
 }

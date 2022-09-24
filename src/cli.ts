@@ -32,7 +32,7 @@ console.log(`Using host: ${registry.getHost()}`);
 
 console.log(`Using version: ${registry.getVersion()}`);
 
-console.log(`Valid token: ${registry.isTokenValid(registry.getImageName())}`);
+console.log(`Valid token: ${String(registry.isTokenValid(registry.getImageName()))}`);
 
 const tags = await registry.fetchImageTags();
 
@@ -42,7 +42,7 @@ if (tags.length === 0) {
 }
 
 /** @type {Array<{title: string}>} */
-const tagChoices = [];
+const tagChoices: Array<{title: string}> = [];
 
 for (const tag of tags) {
 	tagChoices.push({title: tag});
@@ -78,5 +78,5 @@ for (const [index, {title: layerSHA}] of layerChoices.entries()) {
 
 await Promise.all(results);
 
-console.log(`Valid token: ${registry.isTokenValid(registry.getImageName())}`);
+console.log(`Valid token: ${String(registry.isTokenValid(registry.getImageName()))}`);
 

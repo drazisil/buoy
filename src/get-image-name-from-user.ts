@@ -14,5 +14,25 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// eslint-disable-next-line import/no-unassigned-import
-import './index.test.js';
+import prompts from 'prompts';
+
+/**
+ * Prompt the user for image name
+ * @returns {Promise<string>}
+ */
+export async function getImageNameFromUser(): Promise<string> {
+	const choice = await prompts({
+		type: 'text',
+		name: 'imageNameChoice',
+		message: 'Enter the image name (org/name):',
+		initial: '',
+	});
+
+	const imageNameChoice = choice.imageNameChoice as string;
+
+	if (typeof imageNameChoice === 'undefined') {
+		throw new TypeError('Please pass the image name!');
+	}
+
+	return imageNameChoice;
+}
