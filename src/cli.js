@@ -15,10 +15,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import {mkdirSync} from 'node:fs';
-import {checkImageName, DockerRegistryClient} from '../src/index.js';
-import {getImageNameFromUser} from '../src/get-image-name-from-user.js';
-import {getTagfromUser} from '../src/get-tag-from-user.js';
+import {mkdirSync, writeFileSync} from 'node:fs';
+import {getImageNameFromUser} from './get-image-name-from-user.js';
+import {getTagfromUser} from './get-tag-from-user.js';
+import {checkImageName, DockerRegistryClient} from './index.js';
 
 const imageName = await getImageNameFromUser();
 
@@ -50,26 +50,30 @@ for (const tag of tags) {
 
 const selectedTag = await getTagfromUser(tagChoices);
 
-const manifest = await registry.fetchImageManifestForTag(selectedTag);
-
-if (manifest.fsLayers.length !== manifest.history.length) {
-	throw new Error('Mismatched number of history entries');
-}
+const imageManifest = await registry.fetchImageManifestForTag(selectedTag);
 
 const layerChoices = [];
 
-for (const layer of manifest.fsLayers) {
-	layerChoices.push({title: layer.blobSum});
+for (const layer of imageManifest.layers) {
+	layerChoices.push({title: layer.digest});
 }
 
 layerChoices.reverse();
 
-mkdirSync(`tmp/${registry.getImageName()}`, {recursive: true});
+const savePath = `tmp/${registry.getImageName()}/${selectedTag}`;
+
+mkdirSync(savePath, {recursive: true});
+
+writeFileSync(`${savePath}/manifest.json`, JSON.stringify(imageManifest));
+
+const configManifest = await registry.fetchManifestByDigest(imageManifest.config.digest);
+
+writeFileSync(`${savePath}/config.manifest.json`, JSON.stringify(configManifest));
 
 const results = [];
 
 for (const [index, {title: layerSHA}] of layerChoices.entries()) {
-	results.push(registry.extractLayer(manifest, index, layerSHA, selectedTag));
+	results.push(registry.extractLayer(imageManifest, index, layerSHA, selectedTag));
 }
 
 await Promise.all(results);

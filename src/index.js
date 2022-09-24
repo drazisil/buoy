@@ -14,5 +14,5 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-export {buildURL, checkHostURL, checkImageName} from '../lib/container-registry-client.js';
+export {buildURL, checkHostURL, checkImageName} from './container-registry-client.js';
 export {DockerRegistryClient} from './docker-registry-reader.js';

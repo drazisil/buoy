@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import {ContainerRegistryClient} from '../lib/container-registry-client.js';
+import {ContainerRegistryClient} from './container-registry-client.js';
 
 /** @module DockerRegistryClient */
 

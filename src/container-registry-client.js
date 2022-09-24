@@ -34,13 +34,86 @@ import {Dispatcher, request} from 'undici';
  */
 
 /**
- * Used by {@link ContainerRegistryClient.extractLayer}
+ * Used by {@link OCIImageManifest}
+ * @see {@link https://github.com/opencontainers/image-spec/blob/e67f056ed21bd4d7360f3bed5ee393b0682eafe7/descriptor.md}
  * @global
- * @typedef {Object} BuoyImageManifest
- * @prop {Object[]} fsLayers
- * @prop {string} fsLayers.blobSum
- * @prop {Object[]} history
- * @prop {string} history.v1Compatibility
+ * @typedef {Object} OCIContentDescriptor
+ * @prop {string} mediaType
+ * @prop {string} digest
+ * @prop {number} size
+ * @prop {string[]} [urls]
+ * @prop {Record<string, string>} [annotations]
+ * @prop {string} [data]
+ * @prop {string} [artifactType]
+ */
+
+/**
+ * Used by {@link ContainerRegistryClient.extractLayer}
+ * @see {@link https://github.com/opencontainers/image-spec/blob/e67f056ed21bd4d7360f3bed5ee393b0682eafe7/manifest.md}
+ * @global
+ * @typedef {Object} OCIImageManifest
+ * @prop {number} schemaVersion
+ * @prop {string} mediaType
+ * @prop {OCIContentDescriptor} config
+ * @prop {OCIContentDescriptor[]} layers
+ * @prop {OCIContentDescriptor} [subject]
+ * @prop {Record<string, string>} [annotations]
+ */
+
+/**
+ * Used by {@link OCIImageConfigurationConfig}
+ * @global
+ * @typedef {Object} OCIImageConfigurationRootFS
+ * @prop {"layers"} type
+ * @prop {string[]} diff_ids
+ */
+
+/**
+ * Used by {@link OCIImageConfigurationConfig}
+ * @global
+ * @typedef {Object} OCIImageConfigurationHistory
+ * @prop {string} [created]
+ * @prop {string} [auhor]
+ * @prop {string} [created_by]
+ * @prop {string} [comment]
+ * @prop {boolean} [empty_layer]
+ */
+
+/**
+ * Used by {@link OCIImageConfiguration}
+ * @global
+ * @typedef {Object} OCIImageConfigurationConfig
+ * @prop {string} [User]
+ * @prop {string} [ExposedPorts]
+ * @prop {string[]} [Env]
+ * @prop {string[]} [Entrypoint]
+ * @prop {string[]} [Cmd]
+ * @prop {Record<string, {}>} [Volumes]
+ * @prop {string} [WorkingDir]
+ * @prop {Record<string, string>} [Labels]
+ * @prop {string} [StopSignal]
+ * @prop {number} [Memory]
+ * @prop {number} [MemorySwap]
+ * @prop {number} [CpuShares]
+ * @prop {{}} [HealthCheck]
+ * @prop {OCIImageConfigurationRootFS} rootfs
+ * @prop {OCIImageConfigurationHistory[]} [history]
+ *
+ */
+
+/**
+ * Used by {@link ContainerRegistryClient.fetchImageManifestForTag}
+ * @see {@link https://github.com/opencontainers/image-spec/blob/e67f056ed21bd4d7360f3bed5ee393b0682eafe7/config.md}
+ * @global
+ * @typedef {Object} OCIImageConfiguration
+ * @prop {string} [created]
+ * @prop {string} [author]
+ * @prop {string} architecture
+ * @prop {string} os
+ * @prop {string} [os.version]
+ * @prop {string[]} [os.features]
+ * @prop {string} [variant]
+ * @prop {OCIImageConfigurationConfig} [config]
  */
 
 /**
@@ -165,7 +238,7 @@ export class ContainerRegistryClient {
      */
 	buildHeaders(useToken = true, token = '') {
 		const headers = [
-			'Docker-Distribution-API-Version', `registry/${this.registryVersion}`,
+			'Accept', 'application/vnd.docker.distribution.manifest.v2+json',
 		];
 		if (useToken) {
 			headers.push('Authorization', `Bearer ${token}`);
@@ -243,14 +316,12 @@ export class ContainerRegistryClient {
 
 	/**
  *
- * @param {BuoyImageManifest} manifest
+ * @param {OCIImageManifest} manifest
  * @param {number} index
  * @param {string} layerSHA
  * @param {string} tag
  */
 	async extractLayer(manifest, index, layerSHA, tag) {
-		const {v1Compatibility: historyJSON} = manifest.history[index];
-
 		const url = buildURL({
 			host: this.getHost(),
 			version: this.getVersion(),
@@ -297,14 +368,35 @@ export class ContainerRegistryClient {
 				throw new Error(`Error extracting: ${String(error)}`);
 			}
 		}
+	}
 
-		await writeFile(`${filePath}.history.json`, historyJSON);
+	/**
+	 * Fetch a manifest from the registry by it's digest
+	 * @param {string} digest
+	 * @returns {Promise<OCIImageManifest>}
+	 */
+	async fetchManifestByDigest(digest) {
+		const url = buildURL({
+			host: this.getHost(),
+			version: this.getVersion(),
+			namespace: this.getImageName(),
+			endpoint: 'blobs',
+			reference: digest,
+		});
+
+		console.log(`Request URL: ${url}`);
+
+		const apiResponse = await this.callRaw(url);
+
+		console.log(`Content type: ${apiResponse.headers['content-type']}`);
+
+		return apiResponse.body.json();
 	}
 
 	/**
 	 *
 	 * @param {string} tag
-	 * @returns {Promise<BuoyImageManifest>}
+	 * @returns {Promise<OCIImageManifest>}
 	 */
 	async fetchImageManifestForTag(tag) {
 		const url = buildURL({
@@ -321,7 +413,7 @@ export class ContainerRegistryClient {
 
 		console.log(`Content type: ${apiResponse.headers['content-type']}`);
 
-		if (apiResponse.headers['content-type'] !== 'application/vnd.docker.distribution.manifest.v1+prettyjws') {
+		if (apiResponse.headers['content-type'] !== 'application/vnd.docker.distribution.manifest.v2+json') {
 			throw new Error('Not able to pull a signed manifest');
 		}
 
