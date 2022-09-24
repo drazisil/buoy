@@ -28,7 +28,7 @@ export async function getImageNameFromUser(): Promise<string> {
 		initial: '',
 	});
 
-	const {imageNameChoice} = choice;
+	const imageNameChoice = choice.imageNameChoice as string;
 
 	if (typeof imageNameChoice === 'undefined') {
 		throw new TypeError('Please pass the image name!');
