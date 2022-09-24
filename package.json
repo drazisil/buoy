@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "bin": {
-    "buoy": "./src/cli.js"
+    "buoy": "./built/cli.js"
   },
   "exports": {
     ".": "./src/index.js"
@@ -12,15 +12,22 @@
   "scripts": {
     "clean": "rm -rf tmp/** && touch tmp/.gitkeep",
     "docs": "rm -rf out && ./node_modules/.bin/jsdoc -t jsdoc-template -c jsdocconf.json --verbose -R README.md -r .",
-    "test": "xo && c8 -x jsdoc-template -x out -x tests -x built -x coverage -r text -r cobertura -r html --all node tests/loader.js"
+    "test": "xo && c8 -x jsdoc-template -x out -x tests -x built -x coverage -r text -r cobertura -r html --all mocha"
   },
   "keywords": [],
   "author": "",
   "license": "AGPL-3.0-only",
   "devDependencies": {
+    "@types/mocha": "^9.1.1",
     "@types/node": "18.7.13",
+    "@types/prompts": "^2.0.14",
+    "@types/tar-fs": "^2.0.1",
     "c8": "7.12.0",
+    "i": "^0.3.7",
     "jsdoc": "3.6.11",
+    "mocha": "^10.0.0",
+    "npm": "^8.19.2",
+    "ts-node": "^10.9.1",
     "typescript": "4.8.3",
     "xo": "0.52.3"
   },
@@ -29,9 +36,13 @@
   },
   "xo": {
     "ignores": [
-      "jsdoc-template"
+      "jsdoc-template",
+      "built"
     ],
     "rules": {
+      "@typescript-eslint/naming-convention": [
+        "off"
+      ],
       "n/prefer-global/process": [
         "error",
         "always"

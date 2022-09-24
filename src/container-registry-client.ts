@@ -20,8 +20,9 @@ import {Stream} from 'node:stream';
 import {gunzipSync} from 'node:zlib';
 import sanitize from 'sanitize-filename';
 import {extract} from 'tar-fs';
-// eslint-disable-next-line no-unused-vars
-import {Dispatcher, request} from 'undici';
+
+import type {Dispatcher} from 'undici';
+import {request} from 'undici';
 
 /** @module ContainerRegistryClient */
 
@@ -32,6 +33,10 @@ import {Dispatcher, request} from 'undici';
  * @prop {string} authHost
  * @prop {string} authService
  */
+export type AuthOptions = {
+	authHost: string;
+	authService: string;
+};
 
 /**
  * Used by {@link OCIImageManifest}
@@ -46,7 +51,15 @@ import {Dispatcher, request} from 'undici';
  * @prop {string} [data]
  * @prop {string} [artifactType]
  */
-
+export type OCIContentDescriptor = {
+	mediaType: string;
+	digest: string;
+	size: number;
+	urls?: Record<string, string>;
+	annotations?: Record<string, string>;
+	data?: string;
+	artifactType?: string;
+};
 /**
  * Used by {@link ContainerRegistryClient.extractLayer}
  * @see {@link https://github.com/opencontainers/image-spec/blob/e67f056ed21bd4d7360f3bed5ee393b0682eafe7/manifest.md}
@@ -59,6 +72,14 @@ import {Dispatcher, request} from 'undici';
  * @prop {OCIContentDescriptor} [subject]
  * @prop {Record<string, string>} [annotations]
  */
+export type OCIImageManifest = {
+	schemaVersion: number;
+	mediaType: string;
+	config: Record<string, string>;
+	layers: Array<Record<string, OCIContentDescriptor>>;
+	subject?: Record<string, string>;
+	annotations?: Record<string, string>;
+};
 
 /**
  * Used by {@link OCIImageConfigurationConfig}
@@ -129,11 +150,11 @@ export class ContainerRegistryClient {
 	/** @type {string} */
 	imageName = '';
 	/** @type {string} */
-	registryHost;
+	registryHost: string;
 	/** @type {string} */
-	registryVersion;
+	registryVersion: string;
 	/** @type {Record<string, { token: string, issued: string, expiry: number }>} */
-	tokenData;
+	tokenData: Record<string, {token: string; issued: string; expiry: number}>;
 	/** @type {boolean} */
 	useAuth = false;
 
@@ -144,7 +165,7 @@ export class ContainerRegistryClient {
      * @param {AuthOptions} [authOptions]
      * An optional object containg the host and service for auth
      */
-	constructor(registryHost, authOptions = undefined) {
+	constructor(registryHost: string, authOptions: AuthOptions = undefined) {
 		checkHostURL(registryHost);
 		this.registryHost = registryHost;
 		this.registryVersion = 'v2';
@@ -160,14 +181,14 @@ export class ContainerRegistryClient {
 	/**
      * @return {string}
      */
-	getHost() {
+	getHost(): string {
 		return this.registryHost;
 	}
 
 	/**
      * @return {string}
      */
-	getImageName() {
+	getImageName(): string {
 		return this.imageName;
 	}
 
@@ -175,7 +196,7 @@ export class ContainerRegistryClient {
 	 * The version of the registry schema we will use
 	 * @return {string} The version of the registry schema we will use
      */
-	getVersion() {
+	getVersion(): string {
 		return this.registryVersion;
 	}
 
@@ -184,7 +205,7 @@ export class ContainerRegistryClient {
      * @param {string} imageName
      * @returns {boolean} If the current timestamp is greater then the expiry
      */
-	isTokenValid(imageName) {
+	isTokenValid(imageName: string): boolean {
 		if (typeof this.tokenData[imageName] === 'undefined') {
 			return false;
 		}
@@ -198,7 +219,7 @@ export class ContainerRegistryClient {
      *
      * @param {AuthOptions} authOptions
      */
-	setAuthOptions({authHost, authService}) {
+	setAuthOptions({authHost, authService}: AuthOptions) {
 		checkHostURL(authHost);
 		this.authHost = authHost;
 		this.authService = authService;
@@ -209,7 +230,7 @@ export class ContainerRegistryClient {
      *
      * @param {string} registryHost
      */
-	setHost(registryHost) {
+	setHost(registryHost: string) {
 		this.registryHost = registryHost;
 	}
 
@@ -217,7 +238,7 @@ export class ContainerRegistryClient {
      *
      * @param {string} imageName
      */
-	setImageName(imageName) {
+	setImageName(imageName: string) {
 		checkImageName(imageName);
 		this.imageName = imageName;
 	}
@@ -226,8 +247,8 @@ export class ContainerRegistryClient {
      *
      * @param {string} registryAPIVersion
      */
-	setVersion(registryAPIVersion) {
-		this._registryAPIVersion = registryAPIVersion;
+	setVersion(registryAPIVersion: string) {
+		this.registryVersion = registryAPIVersion;
 	}
 
 	/**
@@ -236,7 +257,7 @@ export class ContainerRegistryClient {
      * @param {string} token
      * @return {string[]}
      */
-	buildHeaders(useToken = true, token = '') {
+	buildHeaders(useToken = true, token = ''): string[] {
 		const headers = [
 			'Accept', 'application/vnd.docker.distribution.manifest.v2+json',
 		];
@@ -251,7 +272,7 @@ export class ContainerRegistryClient {
      *
      * @param {string} imageName
      */
-	async getTokenFromAuthService(imageName) {
+	async getTokenFromAuthService(imageName: string) {
 		checkImageName(imageName);
 		if (!this.useAuth || this.authHost === '') {
 			throw new Error('Attempted to call the auth service before setting it');
@@ -267,12 +288,18 @@ export class ContainerRegistryClient {
 
 			const apiResponse = await request(url);
 
-			if ([200, 301].includes(apiResponse.statusCode) !== true) {
+			if (![200, 301].includes(apiResponse.statusCode)) {
 				throw new Error(`HTTP error! Status: ${apiResponse.statusCode}`);
 			}
 
+			type AuthServiceJSONResponse = {
+				token: string;
+				expires_in: string;
+				issued_at: string;
+			};
+
 			/** @type {{ token: string, expires_in: string, issued_at: string }} */
-			const responseJSON = await apiResponse.body.json();
+			const responseJSON: {token: string; expires_in: string; issued_at: string} = await (apiResponse.body.json() as Promise<AuthServiceJSONResponse>);
 
 			const {token, expires_in: expiresInSeconds, issued_at: issued} = responseJSON;
 
@@ -299,14 +326,14 @@ export class ContainerRegistryClient {
      * @return {Promise<Dispatcher.ResponseData>}
      * @throws {Error} If the response code is not successfull
      */
-	async callRaw(url, shouldUseToken = true) {
+	async callRaw(url: string, shouldUseToken = true): Promise<Dispatcher.ResponseData> {
 		await this.getTokenFromAuthService(this.imageName);
 
 		const requestHeaders = this.buildHeaders(shouldUseToken, this.tokenData[this.imageName].token);
 
 		const apiResponse = await request(url, {headers: requestHeaders, maxRedirections: 1});
 
-		if ([200, 301].includes(apiResponse.statusCode) !== true) {
+		if (![200, 301].includes(apiResponse.statusCode)) {
 			console.dir(apiResponse.headers);
 			throw new Error(`HTTP error! Status: ${apiResponse.statusCode}`);
 		}
@@ -321,7 +348,7 @@ export class ContainerRegistryClient {
  * @param {string} layerSHA
  * @param {string} tag
  */
-	async extractLayer(manifest, index, layerSHA, tag) {
+	async extractLayer(manifest: OCIImageManifest, index: number, layerSHA: string, tag: string) {
 		const url = buildURL({
 			host: this.getHost(),
 			version: this.getVersion(),
@@ -364,7 +391,7 @@ export class ContainerRegistryClient {
 					dmode: 0o555, // All dirs should be readable
 					fmode: 0o444, // All files should be readable
 				}));
-			} catch (error) {
+			} catch (error: unknown) {
 				throw new Error(`Error extracting: ${String(error)}`);
 			}
 		}
@@ -375,7 +402,7 @@ export class ContainerRegistryClient {
 	 * @param {string} digest
 	 * @returns {Promise<OCIImageManifest>}
 	 */
-	async fetchManifestByDigest(digest) {
+	async fetchManifestByDigest(digest: string): Promise<OCIImageManifest> {
 		const url = buildURL({
 			host: this.getHost(),
 			version: this.getVersion(),
@@ -390,7 +417,7 @@ export class ContainerRegistryClient {
 
 		console.log(`Content type: ${apiResponse.headers['content-type']}`);
 
-		return apiResponse.body.json();
+		return apiResponse.body.json() as Promise<OCIImageManifest>;
 	}
 
 	/**
@@ -398,7 +425,7 @@ export class ContainerRegistryClient {
 	 * @param {string} tag
 	 * @returns {Promise<OCIImageManifest>}
 	 */
-	async fetchImageManifestForTag(tag) {
+	async fetchImageManifestForTag(tag: string): Promise<OCIImageManifest> {
 		const url = buildURL({
 			host: this.getHost(),
 			version: this.getVersion(),
@@ -417,14 +444,14 @@ export class ContainerRegistryClient {
 			throw new Error('Not able to pull a signed manifest');
 		}
 
-		return apiResponse.body.json();
+		return apiResponse.body.json() as Promise<OCIImageManifest>;
 	}
 
 	/**
 	 * Fetch list of tags for image from registry
 	 * @returns {Promise<string[]>}
 	 */
-	async fetchImageTags() {
+	async fetchImageTags(): Promise<string[]> {
 		const url = buildURL({
 			host: this.getHost(),
 			version: this.getVersion(),
@@ -439,7 +466,7 @@ export class ContainerRegistryClient {
 
 		console.log(`Content type: ${apiResponse.headers['content-type']}`);
 
-		const {tags} = await apiResponse.body.json();
+		const {tags} = await apiResponse.body.json() as {tags: string[]};
 
 		return tags || [];
 	}
@@ -450,7 +477,7 @@ export class ContainerRegistryClient {
  * @param {string} imageName
  * @thows {Error} Image name is not set
  */
-export function checkImageName(imageName) {
+export function checkImageName(imageName: string) {
 	if (imageName.length === 0 || typeof imageName === 'undefined') {
 		throw new Error('Image name is not set');
 	}
@@ -469,7 +496,7 @@ export function checkImageName(imageName) {
  * @param {string} registryHost
  * @thows {Error} Pass only the host, not the protocol or port
  */
-export function checkHostURL(registryHost) {
+export function checkHostURL(registryHost: string) {
 	if (registryHost.includes(':')) {
 		throw new Error('Pass only the host, not the protocol or port');
 	}
@@ -484,12 +511,19 @@ export function checkHostURL(registryHost) {
  * @prop {string} endpoint
  * @prop {string} reference
  */
+export type BuildOptions = {
+	host: string;
+	version: string;
+	namespace: string;
+	endpoint: string;
+	reference: string;
+};
 
 /**
  * Build a url string suitable for {@link ContainerRegistryClient.callRaw}
  * @param {BuildOptions} buildOptions
  * @return {string}
  */
-export function buildURL({host, version, namespace, endpoint, reference}) {
+export function buildURL({host, version, namespace, endpoint, reference}: BuildOptions): string {
 	return `https://${host}/${version}/${namespace}/${endpoint}/${reference}`;
 }
