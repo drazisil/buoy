@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import assert from 'node:assert';
-import {buildURL, checkHostURL, checkImageName} from '../src/index.js';
+import {buildURL, checkImageName} from '../src/index.js';
 
 describe('buildURL', () => {
 	it('builds a URL', () => {
@@ -25,14 +25,6 @@ describe('buildURL', () => {
 			namespace: 'test/image',
 			endpoint: 'tags',
 			reference: 'foo'}), 'https://https://host.local/v6/test/image/tags/foo');
-	});
-});
-
-describe('checkHostURL', () => {
-	it('checks the host URL', () => {
-		assert.throws(() => {
-			checkHostURL('https://local');
-		}, /protocol/);
 	});
 });
 

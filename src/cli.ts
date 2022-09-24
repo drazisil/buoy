@@ -16,9 +16,27 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import {mkdirSync, writeFileSync} from 'node:fs';
+import {ContainerRegistryClient} from './container-registry-client.js';
 import {getImageNameFromUser} from './get-image-name-from-user.js';
 import {getTagfromUser} from './get-tag-from-user.js';
-import {checkImageName, DockerRegistryClient} from './index.js';
+import {pickRegistryFromUser} from './pick-registry-from-user.js';
+import {checkImageName} from './index.js';
+
+const registryConfigs: RegistryConfig[] = [
+	{
+		title: 'registry.docker.com',
+		authHost: 'https://auth.docker.io',
+		authService: 'registry.docker.io',
+	},
+	{
+		title: 'us-docker.pkg.dev',
+		authHost: 'https://us-docker.pkg.dev/v2',
+		authService: 'us-docker.pkg.dev',
+	},
+
+];
+
+const registryChoice = await pickRegistryFromUser(registryConfigs);
 
 const imageName = await getImageNameFromUser();
 
@@ -26,7 +44,9 @@ checkImageName(imageName);
 
 console.log(`Image name: ${imageName}`);
 
-const registry = new DockerRegistryClient(imageName);
+const registry = new ContainerRegistryClient(registryChoice.title, {authHost: registryChoice.authHost, authService: registryChoice.authService});
+
+registry.setImageName(imageName);
 
 console.log(`Using host: ${registry.getHost()}`);
 

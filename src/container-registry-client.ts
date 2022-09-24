@@ -150,7 +150,7 @@ export class ContainerRegistryClient {
 	/** @type {string} */
 	imageName = '';
 	/** @type {string} */
-	registryHost: string;
+	registryHost = '';
 	/** @type {string} */
 	registryVersion: string;
 	/** @type {Record<string, { token: string, issued: string, expiry: number }>} */
@@ -166,7 +166,6 @@ export class ContainerRegistryClient {
      * An optional object containg the host and service for auth
      */
 	constructor(registryHost: string, authOptions: AuthOptions = undefined) {
-		checkHostURL(registryHost);
 		this.registryHost = registryHost;
 		this.registryVersion = 'v2';
 		this.authService = registryHost;
@@ -174,6 +173,8 @@ export class ContainerRegistryClient {
 			this.authHost = authOptions.authHost;
 			this.authService = authOptions.authService;
 		}
+
+		this.setAuthOptions({authHost: this.authHost, authService: this.authService});
 
 		this.tokenData = {};
 	}
@@ -220,7 +221,6 @@ export class ContainerRegistryClient {
      * @param {AuthOptions} authOptions
      */
 	setAuthOptions({authHost, authService}: AuthOptions) {
-		checkHostURL(authHost);
 		this.authHost = authHost;
 		this.authService = authService;
 		this.useAuth = true;
@@ -283,12 +283,20 @@ export class ContainerRegistryClient {
 
 		if (!this.isTokenValid(imageName)) {
 			const scope = `repository:${imageName}:pull`;
+			let queryParameters = {};
 
-			const url = `https://${this.authHost}/token?service=${this.authService}&scope=${scope}`;
+			// TODO: Make this go away!
+			if (this.authHost.includes('docker.io')) {
+				queryParameters = {service: this.authService, scope};
+			}
 
-			const apiResponse = await request(url);
+			const iurl = buildAuthURL(this.authHost, queryParameters);
 
-			if (![200, 301].includes(apiResponse.statusCode)) {
+			console.log(`Request URL: ${iurl}`);
+
+			const apiResponse = await request(iurl.toString(), {maxRedirections: 1});
+
+			if (![200, 301, 302].includes(apiResponse.statusCode)) {
 				throw new Error(`HTTP error! Status: ${apiResponse.statusCode}`);
 			}
 
@@ -333,7 +341,7 @@ export class ContainerRegistryClient {
 
 		const apiResponse = await request(url, {headers: requestHeaders, maxRedirections: 1});
 
-		if (![200, 301].includes(apiResponse.statusCode)) {
+		if (![200, 301, 302].includes(apiResponse.statusCode)) {
 			console.dir(apiResponse.headers);
 			throw new Error(`HTTP error! Status: ${apiResponse.statusCode}`);
 		}
@@ -472,6 +480,21 @@ export class ContainerRegistryClient {
 	}
 }
 
+export function buildAuthURL(host: string, queryParameters: Record<string, string>): string {
+	const iurl = new URL('token', host);
+
+	for (const queryParameter in queryParameters) {
+		if (Object.prototype.hasOwnProperty.call(queryParameters, queryParameter)) {
+			iurl.searchParams.set(queryParameter, queryParameters[queryParameter]);
+		}
+	}
+
+	const url = iurl.toString();
+	console.log(`Request URL: ${url}`);
+
+	return url;
+}
+
 /**
  * Validate an image name strict is set and not empty
  * @param {string} imageName
@@ -488,17 +511,6 @@ export function checkImageName(imageName: string) {
 
 	if (!imageName.includes('/')) {
 		throw new Error('Pass both org and repo in the form of org/name.');
-	}
-}
-
-/**
- * Validate a host does not contain protocol or port segments
- * @param {string} registryHost
- * @thows {Error} Pass only the host, not the protocol or port
- */
-export function checkHostURL(registryHost: string) {
-	if (registryHost.includes(':')) {
-		throw new Error('Pass only the host, not the protocol or port');
 	}
 }
 

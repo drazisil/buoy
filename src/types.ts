@@ -14,22 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import {ContainerRegistryClient} from './container-registry-client.js';
-
-/** @module DockerRegistryClient */
-
-/**
- * @extends {ContainerRegistryClient}
- * @classdesc A wrapper class around {@link ContainerRegistryClient}
- */
-export class DockerRegistryClient extends ContainerRegistryClient {
-	/**
-     *
-     * @param {string} imageName
-     */
-	constructor(imageName) {
-		super('registry.docker.com');
-		this.setImageName(imageName);
-		this.setAuthOptions({authHost: 'auth.docker.io', authService: 'registry.docker.io'});
-	}
-}
+type RegistryConfig = {
+	title: string;
+	authHost: string;
+	authService: string;
+};
