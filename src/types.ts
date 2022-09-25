@@ -152,9 +152,9 @@ export type OCIImageConfiguration = {
 	created?: string;
 	author?: string;
 	architecture?: string;
-   os: string;
-	"os.version"?: string;
-	"os.features"?: string[];
+	os: string;
+	'os.version'?: string;
+	'os.features'?: string[];
 	variant?: string;
 	config?: OCIImageConfigurationConfig;
 };
