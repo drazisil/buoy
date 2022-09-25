@@ -85,7 +85,7 @@ export class ContainerRegistryClient {
 	async setImageName(imageName: string) {
 		checkImageName(imageName);
 		this.imageName = imageName;
-		return this.getTokenFromAuthService(imageName);
+		await this.updateTokenFromAuthServiceIfNeeded(imageName);
 	}
 
 	/**
@@ -93,35 +93,18 @@ export class ContainerRegistryClient {
 	 * @see {@link https://github.com/nodejs/undici/blob/main/docs/api/Dispatcher.md#parameter-responsedata}
 	  */
 
-	async extractLayer(manifest: OCIImageManifest, index: number, layerSHA: string, tag: string) {
+	async fetchLayerFromRegistry(manifest: OCIImageManifest, index: number, layerSHA: string, tag: string) {
 		const bodyBuffer = await this.registryConnectionProvider.getLayerFromRegistry(this.getImageName(), layerSHA, this.tokenData);
 
 		console.log(`Gzipped length: ${bodyBuffer.byteLength}`);
 
-		let filePath = `tmp/${this.getImageName()}/${sanitize(tag)}`;
+		const filePath = `tmp/${this.getImageName()}/${sanitize(tag)}`;
 
 		mkdirSync(filePath, {recursive: true});
 
-		filePath = `${filePath}/${index}_${layerSHA}`;
+		const layerFilePath = `${filePath}/${index}_${layerSHA}`;
 
-		if (bodyBuffer.byteLength === 32) {
-			await writeFile(`${filePath}.empty`, Buffer.alloc(0));
-		} else {
-			await writeFile(`${filePath}.gz`, bodyBuffer);
-
-			const unGZippedBlob = gunzipSync(bodyBuffer);
-
-			console.log(`Ungzipped length: ${unGZippedBlob.byteLength}`);
-
-			try {
-				Stream.Readable.from(unGZippedBlob).pipe(extract(filePath, {
-					dmode: 0o555, // All dirs should be readable
-					fmode: 0o444, // All files should be readable
-				}));
-			} catch (error: unknown) {
-				throw new Error(`Error extracting: ${String(error)}`);
-			}
-		}
+		await writeLayerToFS(layerFilePath, bodyBuffer);
 	}
 
 	/**
@@ -154,14 +137,31 @@ export class ContainerRegistryClient {
      *
      * @param {string} imageName
      */
-	private async getTokenFromAuthService(imageName: string) {
+	private async updateTokenFromAuthServiceIfNeeded(imageName: string): Promise<void> {
 		if (!this.isTokenValid()) {
 			this.tokenData = await this.registryConnectionProvider.getTokenFromAuthService(imageName);
-
-			return this.tokenData.token;
 		}
+	}
+}
 
-		return this.tokenData.token;
+async function writeLayerToFS(filePath: string, bodyBuffer: Buffer): Promise<void> {
+	if (bodyBuffer.byteLength === 32) {
+		await writeFile(`${filePath}.empty`, Buffer.alloc(0));
+	} else {
+		await writeFile(`${filePath}.gz`, bodyBuffer);
+
+		const unGZippedBlob = gunzipSync(bodyBuffer);
+
+		console.log(`Ungzipped length: ${unGZippedBlob.byteLength}`);
+
+		try {
+			Stream.Readable.from(unGZippedBlob).pipe(extract(filePath, {
+				dmode: 0o555,
+				fmode: 0o444, // All files should be readable
+			}));
+		} catch (error: unknown) {
+			throw new Error(`Error extracting: ${String(error)}`);
+		}
 	}
 }
 

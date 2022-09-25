@@ -60,4 +60,49 @@ describe('ContainerRegistryClient', () => {
 			assert.equal(client.getImageName(), imageName);
 		});
 	});
+
+	describe('#fetchManifestByDigest', () => {
+		it('should return an OCIImageManifest object', async () => {
+			// Arrange
+			const mockProvider = new MockRegistryConnectionProvider();
+			const client = ContainerRegistryClient.newWithProvider(mockProvider);
+			const imageName = 'exampleOrgName/exampleImageName';
+
+			// Act
+			const result = await client.fetchManifestByDigest(imageName);
+
+			// Assert
+			assert.ok(typeof result.layers !== 'undefined');
+		});
+	});
+
+	describe('#fetchImageManifestForTag', () => {
+		it('should return an OCIImageManifest object', async () => {
+			// Arrange
+			const mockProvider = new MockRegistryConnectionProvider();
+			const client = ContainerRegistryClient.newWithProvider(mockProvider);
+			const imageName = 'exampleOrgName/exampleImageName';
+
+			// Act
+			const result = await client.fetchImageManifestForTag(imageName);
+
+			// Assert
+			assert.ok(typeof result.layers !== 'undefined');
+		});
+	});
+
+	describe('#fetchImageTags', () => {
+		it('should return an array of strings', async () => {
+			// Arrange
+			const mockProvider = new MockRegistryConnectionProvider();
+			const client = ContainerRegistryClient.newWithProvider(mockProvider);
+			const imageName = 'exampleOrgName/exampleImageName';
+
+			// Act
+			const result = await client.fetchImageTags();
+
+			// Assert
+			assert.equal(result.length, 3);
+		});
+	});
 });

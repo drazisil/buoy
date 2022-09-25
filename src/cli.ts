@@ -94,7 +94,7 @@ writeFileSync(`${savePath}/config.manifest.json`, JSON.stringify(configManifest)
 const results = [];
 
 for (const [index, {title: layerSHA}] of layerChoices.entries()) {
-	results.push(registry.extractLayer(imageManifest, index, layerSHA, selectedTag));
+	results.push(registry.fetchLayerFromRegistry(imageManifest, index, layerSHA, selectedTag));
 }
 
 await Promise.all(results);

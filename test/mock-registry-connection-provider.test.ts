@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import type {AuthTokenData, IRegistryConnectionProvider, OCIImageConfiguration, OCIImageManifest} from '../src/types';
+import {mockImageManifest} from './mock-image-menifest.test.js';
 
 export class MockRegistryConnectionProvider implements IRegistryConnectionProvider {
 	registryHost = 'http://localhost:8080';
@@ -23,15 +24,15 @@ export class MockRegistryConnectionProvider implements IRegistryConnectionProvid
 	}
 
 	async getTagsFromRegistry(imageName: string, tokenData: AuthTokenData): Promise<string[]> {
-		throw new Error('Not implemented');
+		return ['tag1', 'tag2', 'tag2'];
 	}
 
 	async getImageManifestFromRegistry(imageName: string, reference: string, tokenData: AuthTokenData): Promise<OCIImageManifest> {
-		throw new Error('Not implemented');
+		return mockImageManifest;
 	}
 
 	async getImageManifestFromRegistryByDigest(imageName: string, digest: string, tokenData: AuthTokenData): Promise<OCIImageManifest> {
-		throw new Error('Not implemented');
+		return mockImageManifest;
 	}
 
 	async getImageConfigurationFromRegistry(imageName: string, tokenData: AuthTokenData): Promise<OCIImageConfiguration> {
@@ -39,6 +40,6 @@ export class MockRegistryConnectionProvider implements IRegistryConnectionProvid
 	}
 
 	async getLayerFromRegistry(imageName: string, layerSHA: string, tokenData: AuthTokenData): Promise<Buffer> {
-		throw new Error('Not implemented');
+		return Buffer.from('Hello! I am an example layer');
 	}
 }
