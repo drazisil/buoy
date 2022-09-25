@@ -53,7 +53,7 @@ await registry.setImageName(imageName);
 
 console.log(`Using host: ${registry.getHost()}`);
 
-console.log(`Valid token: ${String(registry.isTokenValid(registry.getImageName()))}`);
+console.log(`Valid token: ${String(registry.isTokenValid())}`);
 
 const tags = await registry.fetchImageTags();
 
@@ -99,5 +99,5 @@ for (const [index, {title: layerSHA}] of layerChoices.entries()) {
 
 await Promise.all(results);
 
-console.log(`Valid token: ${String(registry.isTokenValid(registry.getImageName()))}`);
+console.log(`Valid token: ${String(registry.isTokenValid())}`);
 

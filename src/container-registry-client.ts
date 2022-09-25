@@ -68,8 +68,8 @@ export class ContainerRegistryClient {
      * @param {string} imageName
      * @returns {boolean} If the current timestamp is greater then the expiry
      */
-	isTokenValid(imageName: string): boolean {
-		if (typeof this.tokenData.token === 'undefined') {
+	isTokenValid(): boolean {
+		if (this.tokenData.issued === '') {
 			return false;
 		}
 
@@ -155,7 +155,7 @@ export class ContainerRegistryClient {
      * @param {string} imageName
      */
 	private async getTokenFromAuthService(imageName: string) {
-		if (!this.isTokenValid(imageName)) {
+		if (!this.isTokenValid()) {
 			this.tokenData = await this.registryConnectionProvider.getTokenFromAuthService(imageName);
 
 			return this.tokenData.token;

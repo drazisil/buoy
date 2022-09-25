@@ -29,4 +29,35 @@ describe('ContainerRegistryClient', () => {
 		// Assert
 		assert.equal(client.getHost(), 'http://localhost:8080');
 	});
+
+	describe('#setImageName', () => {
+		it('should throw when passed an invalid image name', async () => {
+			// Arrange
+			const mockProvider = new MockRegistryConnectionProvider();
+			const client = ContainerRegistryClient.newWithProvider(mockProvider);
+			const imageName = 'exampleImageName';
+
+			// Assert
+			try {
+				await client.setImageName(imageName);
+				assert.fail('Should have thrown an error');
+			} catch (error: unknown) {
+				// Assert
+				assert.match(String(error), /Pass both org and repo in the form of org/);
+			}
+		});
+
+		it('should set the image name', async () => {
+			// Arrange
+			const mockProvider = new MockRegistryConnectionProvider();
+			const client = ContainerRegistryClient.newWithProvider(mockProvider);
+			const imageName = 'exampleOrgName/exampleImageName';
+
+			// Act
+			await client.setImageName(imageName);
+
+			// Assert
+			assert.equal(client.getImageName(), imageName);
+		});
+	});
 });

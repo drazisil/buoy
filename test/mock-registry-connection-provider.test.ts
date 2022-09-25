@@ -19,7 +19,7 @@ export class MockRegistryConnectionProvider implements IRegistryConnectionProvid
 	registryHost = 'http://localhost:8080';
 	registryUsesAuthentication: boolean;
 	async getTokenFromAuthService(imageName?: string | undefined): Promise<{token: string; issued: string; expiry: number}> {
-		throw new Error('Not implemented');
+		return {token: 'notAToken', issued: '01/01/1978', expiry: 0};
 	}
 
 	async getTagsFromRegistry(imageName: string, tokenData: AuthTokenData): Promise<string[]> {
