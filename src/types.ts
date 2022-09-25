@@ -123,7 +123,7 @@ export type OCIImageConfigurationConfig = {
 	Env?: string[];
 	Entrypoint?: string[];
 	Cmd?: string[];
-	Volumes?: string[];
+	Volumes?: Record<string, unknown>;
 	WorkingDir?: string;
 	Labels?: string[];
 	StopSignal?: string;
@@ -152,10 +152,9 @@ export type OCIImageConfiguration = {
 	created?: string;
 	author?: string;
 	architecture?: string;
-	os?: {
-		version: string;
-		features: string[];
-	};
+   os: string;
+	"os.version"?: string;
+	"os.features"?: string[];
 	variant?: string;
 	config?: OCIImageConfigurationConfig;
 };
