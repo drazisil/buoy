@@ -1,5 +1,5 @@
 /**
- * Validate an image name strict is set and not empty
+ * Validate an image name string is set and not empty
  * @param {string} imageName
  * @thows {Error} Image name is not set
  */
