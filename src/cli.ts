@@ -17,23 +17,26 @@
 
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {ContainerRegistryClient} from './container-registry-client.js';
-import {getImageNameFromUser} from './get-image-name-from-user.js';
-import {getTagfromUser} from './get-tag-from-user.js';
-import {pickRegistryFromUser} from './pick-registry-from-user.js';
-import {checkImageName} from './index.js';
+
+import {DockerRegistryProvider} from './provider/docker-registry-provider.js';
+import type {RegistryConfig} from './index.js';
+import {getTagfromUser, getImageNameFromUser, pickRegistryFromUser, checkImageName} from './index.js';
 
 const registryConfigs: RegistryConfig[] = [
 	{
 		title: 'registry.docker.com',
-		authHost: 'https://auth.docker.io',
-		authService: 'registry.docker.io',
+		authOptions: {
+			authHost: 'https://auth.docker.io',
+			authService: 'registry.docker.io',
+		},
 	},
-	{
-		title: 'us-docker.pkg.dev',
-		authHost: 'https://us-docker.pkg.dev/v2',
-		authService: 'us-docker.pkg.dev',
-	},
-
+	// {
+	// 	title: 'us-docker.pkg.dev',
+	// 	authOptions: {
+	// 		authHost: 'https://us-docker.pkg.dev/v2',
+	// 		authService: 'us-docker.pkg.dev',
+	// 	},
+	// },
 ];
 
 const registryChoice = await pickRegistryFromUser(registryConfigs);
@@ -44,13 +47,11 @@ checkImageName(imageName);
 
 console.log(`Image name: ${imageName}`);
 
-const registry = new ContainerRegistryClient(registryChoice.title, {authHost: registryChoice.authHost, authService: registryChoice.authService});
+const registry = ContainerRegistryClient.newWithProvider(new DockerRegistryProvider());
 
-registry.setImageName(imageName);
+await registry.setImageName(imageName);
 
 console.log(`Using host: ${registry.getHost()}`);
-
-console.log(`Using version: ${registry.getVersion()}`);
 
 console.log(`Valid token: ${String(registry.isTokenValid(registry.getImageName()))}`);
 

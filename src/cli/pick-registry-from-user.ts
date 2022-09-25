@@ -15,6 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import prompts from 'prompts';
+import type {AuthOptions} from '../types.js';
+
+export type RegistryConfig = {
+	title: string;
+	authOptions: AuthOptions;
+};
 
 /**
  * Prompt the user for image name
