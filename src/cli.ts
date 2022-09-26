@@ -16,9 +16,30 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import {mkdirSync, writeFileSync} from 'node:fs';
-import {getImageNameFromUser} from './get-image-name-from-user.js';
-import {getTagfromUser} from './get-tag-from-user.js';
-import {checkImageName, DockerRegistryClient} from './index.js';
+import {ContainerRegistryClient} from './container-registry-client.js';
+
+import {DockerRegistryProvider} from './provider/docker-registry-provider.js';
+import type {RegistryConfig} from './index.js';
+import {getTagfromUser, getImageNameFromUser, pickRegistryFromUser, checkImageName} from './index.js';
+
+const registryConfigs: RegistryConfig[] = [
+	{
+		title: 'registry.docker.com',
+		authOptions: {
+			authHost: 'https://auth.docker.io',
+			authService: 'registry.docker.io',
+		},
+	},
+	// {
+	// 	title: 'us-docker.pkg.dev',
+	// 	authOptions: {
+	// 		authHost: 'https://us-docker.pkg.dev/v2',
+	// 		authService: 'us-docker.pkg.dev',
+	// 	},
+	// },
+];
+
+const registryChoice = await pickRegistryFromUser(registryConfigs);
 
 const imageName = await getImageNameFromUser();
 
@@ -26,13 +47,13 @@ checkImageName(imageName);
 
 console.log(`Image name: ${imageName}`);
 
-const registry = new DockerRegistryClient(imageName);
+const registry = ContainerRegistryClient.newWithProvider(new DockerRegistryProvider());
+
+await registry.setImageName(imageName);
 
 console.log(`Using host: ${registry.getHost()}`);
 
-console.log(`Using version: ${registry.getVersion()}`);
-
-console.log(`Valid token: ${String(registry.isTokenValid(registry.getImageName()))}`);
+console.log(`Valid token: ${String(registry.isTokenValid())}`);
 
 const tags = await registry.fetchImageTags();
 
@@ -73,10 +94,10 @@ writeFileSync(`${savePath}/config.manifest.json`, JSON.stringify(configManifest)
 const results = [];
 
 for (const [index, {title: layerSHA}] of layerChoices.entries()) {
-	results.push(registry.extractLayer(imageManifest, index, layerSHA, selectedTag));
+	results.push(registry.fetchLayerFromRegistry(imageManifest, index, layerSHA, selectedTag));
 }
 
 await Promise.all(results);
 
-console.log(`Valid token: ${String(registry.isTokenValid(registry.getImageName()))}`);
+console.log(`Valid token: ${String(registry.isTokenValid())}`);
 

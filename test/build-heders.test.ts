@@ -14,10 +14,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-export {buildURL} from './helpers/build-url.js';
-export {checkImageName} from './helpers/check-image-name.js';
-export {DockerRegistryProvider as DockerRegistryClient} from './provider/docker-registry-provider.js';
-export {getImageNameFromUser} from './cli/get-image-name-from-user.js';
-export {getTagfromUser} from './cli/get-tag-from-user.js';
-export type {RegistryConfig} from './cli/pick-registry-from-user.js';
-export {pickRegistryFromUser} from './cli/pick-registry-from-user.js';
+import assert from 'node:assert';
+import {buildHeaders} from '../src/helpers/build-headers.js';
+
+describe('buildHeaders()', () => {
+	it('should build headers', () => {
+		// Arrange
+		const expectedHeader = 'Authorization';
+
+		// Act
+		const results = buildHeaders(true, 'exampleToken');
+
+		// Assert
+		assert.ok(results.includes(expectedHeader));
+	});
+});

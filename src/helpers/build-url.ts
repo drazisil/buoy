@@ -1,3 +1,4 @@
+
 // Buoy is a image layer scanner
 // Copyright (C) 2022  Drazi Crendraven
 //
@@ -13,11 +14,29 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+/**
+ * Used by {@link buildURL}
+ * @typedef {Object} BuildOptions
+ * @prop {string} host
+ * @prop {string} version
+ * @prop {string} namespace
+ * @prop {string} endpoint
+ * @prop {string} reference
+ */
+export type BuildOptions = {
+	host: string;
+	version: string;
+	namespace: string;
+	endpoint: string;
+	reference: string;
+};
 
-export {buildURL} from './helpers/build-url.js';
-export {checkImageName} from './helpers/check-image-name.js';
-export {DockerRegistryProvider as DockerRegistryClient} from './provider/docker-registry-provider.js';
-export {getImageNameFromUser} from './cli/get-image-name-from-user.js';
-export {getTagfromUser} from './cli/get-tag-from-user.js';
-export type {RegistryConfig} from './cli/pick-registry-from-user.js';
-export {pickRegistryFromUser} from './cli/pick-registry-from-user.js';
+/**
+ * Build a url string suitable for {@link ContainerRegistryClient.callRaw}
+ * @param {BuildOptions} buildOptions
+ * @return {string}
+ */
+
+export function buildURL({host, version, namespace, endpoint, reference}: BuildOptions): string {
+	return `https://${host}/${version}/${namespace}/${endpoint}/${reference}`;
+}

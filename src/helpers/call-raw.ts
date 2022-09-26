@@ -13,11 +13,27 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import {request} from 'undici';
+import type {Dispatcher} from 'undici';
 
-export {buildURL} from './helpers/build-url.js';
-export {checkImageName} from './helpers/check-image-name.js';
-export {DockerRegistryProvider as DockerRegistryClient} from './provider/docker-registry-provider.js';
-export {getImageNameFromUser} from './cli/get-image-name-from-user.js';
-export {getTagfromUser} from './cli/get-tag-from-user.js';
-export type {RegistryConfig} from './cli/pick-registry-from-user.js';
-export {pickRegistryFromUser} from './cli/pick-registry-from-user.js';
+/**
+	 * Perform a fetch against the registry
+	 * @param {string} url
+	 * @param {string[]} headers
+	 * @return {Promise<Dispatcher.ResponseData>}
+	 * @throws {Error} If the response code is not successfull
+	 */
+
+export async function callRaw(url: string, headers: string[]): Promise<Dispatcher.ResponseData> {
+	const apiResponse = await request(url, {headers, maxRedirections: 1});
+
+	if (![200, 301, 302].includes(apiResponse.statusCode)) {
+		console.error(apiResponse.statusCode);
+		console.dir(headers);
+		console.log(url);
+		console.dir(apiResponse.headers);
+		throw new Error(`HTTP error! Status: ${apiResponse.statusCode}`);
+	}
+
+	return apiResponse;
+}

@@ -14,10 +14,26 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-export {buildURL} from './helpers/build-url.js';
-export {checkImageName} from './helpers/check-image-name.js';
-export {DockerRegistryProvider as DockerRegistryClient} from './provider/docker-registry-provider.js';
-export {getImageNameFromUser} from './cli/get-image-name-from-user.js';
-export {getTagfromUser} from './cli/get-tag-from-user.js';
-export type {RegistryConfig} from './cli/pick-registry-from-user.js';
-export {pickRegistryFromUser} from './cli/pick-registry-from-user.js';
+import assert from 'node:assert';
+import {buildAuthURL} from '../src/helpers/build-auth-url.js';
+
+describe('buildAuthURL()', () => {
+	it('should throw when passed an invalid host', () => {
+		// Arrange
+		const expectedURL = 'hello';
+
+		// Assert
+		assert.throws(() => buildAuthURL('host', {a: '1', b: '2'}), /Invalid URL/);
+	});
+
+	it('should build a valid auth url', () => {
+		// Arrange
+		const expectedURL = 'https://test.local/token?a=1&b=2';
+
+		// Act
+		const results = buildAuthURL('https://test.local', {a: '1', b: '2'});
+
+		// Assert
+		assert.equal(results, expectedURL);
+	});
+});

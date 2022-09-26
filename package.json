@@ -12,7 +12,7 @@
   "scripts": {
     "clean": "rm -rf tmp/** && touch tmp/.gitkeep",
     "docs": "rm -rf out && ./node_modules/.bin/jsdoc -t jsdoc-template -c jsdocconf.json --verbose -R README.md -r .",
-    "test": "xo && c8 -x jsdoc-template -x out -x tests -x built -x coverage -r text -r cobertura -r html --all mocha"
+    "test": "xo && c8 -x jsdoc-template -x out -x test -x built -x coverage -r text -r cobertura -r html --all mocha"
   },
   "keywords": [],
   "author": "",
