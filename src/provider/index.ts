@@ -1,4 +1,3 @@
-
 // Buoy is a image layer scanner
 // Copyright (C) 2022  Drazi Crendraven
 //
@@ -14,29 +13,31 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-/**
- * Used by {@link buildURL}
- * @typedef {Object} BuildOptions
- * @prop {string} host
- * @prop {string} version
- * @prop {string} namespace
- * @prop {string} endpoint
- * @prop {string} reference
- */
-export type BuildOptions = {
-	host: string;
-	version: string;
-	namespace: string;
-	endpoint: string;
-	reference: string;
-};
+import type {RegistryConfiguration} from '../types.js';
+import {DockerRegistryProvider} from './docker-registry-provider.js';
 
-/**
- * Build a url string
- * @param {BuildOptions} buildOptions
- * @return {string}
- */
+export {DefaultRegistryProvider} from './default-registry-provider.js';
 
-export function buildURL({host, version, namespace, endpoint, reference}: BuildOptions): string {
-	return `https://${host}/${version}/${namespace}/${endpoint}/${reference}`;
-}
+export const registryConfigurations: RegistryConfiguration[] = [
+	{
+		title: 'registry.docker.com',
+		host: 'registry.docker.com',
+		usesDefaultProvider: false,
+		customRegistryProvider: new DockerRegistryProvider(),
+		authOptions: {
+			usingAuth: true,
+			authHost: 'https://auth.docker.io',
+			authService: 'registry.docker.io',
+		},
+	},
+	{
+		title: 'us-docker.pkg.dev',
+		host: 'us-docker.pkg.dev',
+		usesDefaultProvider: true,
+		authOptions: {
+			usingAuth: false,
+			authHost: '',
+			authService: '',
+		},
+	},
+];

@@ -1,4 +1,3 @@
-
 // Buoy is a image layer scanner
 // Copyright (C) 2022  Drazi Crendraven
 //
@@ -15,18 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import prompts from 'prompts';
-import type {AuthOptions} from '../types.js';
-
-export type RegistryConfig = {
-	title: string;
-	authOptions: AuthOptions;
-};
+import type {RegistryConfiguration} from '../types.js';
 
 /**
  * Prompt the user for image name
  * @returns {Promise<string>}
  */
-export async function pickRegistryFromUser(choices: RegistryConfig[]): Promise<RegistryConfig> {
+export async function pickRegistryFromUser(choices: RegistryConfiguration[]): Promise<RegistryConfiguration> {
 	const choice = await prompts({
 		type: 'select',
 		name: 'selectedRegistry',

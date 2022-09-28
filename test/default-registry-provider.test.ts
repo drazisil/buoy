@@ -15,26 +15,25 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import assert from 'node:assert';
-import {ContainerRegistryClient} from '../src/container-registry-client.js';
-import {MockRegistryConnectionProvider} from './mock-registry-connection-provider.test.js';
+import type {MockClient} from 'undici';
+import {MockAgent, setGlobalDispatcher} from 'undici';
+import {DefaultRegistryProvider} from '../src/provider/default-registry-provider.js';
 
 describe('ContainerRegistryClient', () => {
-	it('should return a ContainerRegistryClient instance', () => {
-		// Arrange
-		const mockProvider = new MockRegistryConnectionProvider();
+	let mockAgent: MockAgent;
+	let mockClient: MockClient;
+	let registryHost: string;
 
-		// Act
-		const client = ContainerRegistryClient.newWithProvider(mockProvider);
-
-		// Assert
-		assert.equal(client.getHost(), 'http://localhost:8080');
+	beforeEach(() => {
+		mockAgent = new MockAgent({connections: 1});
+		mockAgent.disableNetConnect();
+		setGlobalDispatcher(mockAgent);
 	});
 
 	describe('#setImageName', () => {
 		it('should throw when passed an invalid image name', async () => {
 			// Arrange
-			const mockProvider = new MockRegistryConnectionProvider();
-			const client = ContainerRegistryClient.newWithProvider(mockProvider);
+			const client = new DefaultRegistryProvider('NotAHost');
 			const imageName = 'exampleImageName';
 
 			// Assert
@@ -49,27 +48,34 @@ describe('ContainerRegistryClient', () => {
 
 		it('should set the image name', async () => {
 			// Arrange
-			const mockProvider = new MockRegistryConnectionProvider();
-			const client = ContainerRegistryClient.newWithProvider(mockProvider);
+			const client = new DefaultRegistryProvider('NotAHost');
 			const imageName = 'exampleOrgName/exampleImageName';
 
 			// Act
 			await client.setImageName(imageName);
 
 			// Assert
-			assert.equal(client.getImageName(), imageName);
+			assert.equal(client.imageName, imageName);
 		});
 	});
 
 	describe('#fetchManifestByDigest', () => {
 		it('should return an OCIImageManifest object', async () => {
 			// Arrange
-			const mockProvider = new MockRegistryConnectionProvider();
-			const client = ContainerRegistryClient.newWithProvider(mockProvider);
 			const imageName = 'exampleOrgName/exampleImageName';
+			registryHost = 'docker.host.local';
+			mockClient = mockAgent.get(`https://${registryHost}`);
+			mockClient.intercept({
+				method: 'GET',
+				path: '/v2/exampleOrgName/exampleImageName/blobs/abc123',
+			}).reply(200, 'testPOSTHTTP', {
+				headers: {'content-type': 'application/octet-stream'},
+			});
+			const client = new DefaultRegistryProvider(registryHost);
+			await client.setImageName(imageName);
 
 			// Act
-			const result = await client.fetchManifestByDigest(imageName);
+			const result = await client.fetchManifestByDigest('abc123');
 
 			// Assert
 			assert.ok(typeof result.layers !== 'undefined');
@@ -79,8 +85,7 @@ describe('ContainerRegistryClient', () => {
 	describe('#fetchImageManifestForTag', () => {
 		it('should return an OCIImageManifest object', async () => {
 			// Arrange
-			const mockProvider = new MockRegistryConnectionProvider();
-			const client = ContainerRegistryClient.newWithProvider(mockProvider);
+			const client = new DefaultRegistryProvider('NotAHost');
 			const imageName = 'exampleOrgName/exampleImageName';
 
 			// Act
@@ -94,8 +99,7 @@ describe('ContainerRegistryClient', () => {
 	describe('#fetchImageTags', () => {
 		it('should return an array of strings', async () => {
 			// Arrange
-			const mockProvider = new MockRegistryConnectionProvider();
-			const client = ContainerRegistryClient.newWithProvider(mockProvider);
+			const client = new DefaultRegistryProvider('NotAHost');
 			const imageName = 'exampleOrgName/exampleImageName';
 
 			// Act

@@ -20,17 +20,18 @@ import {buildAuthURL} from '../helpers/build-auth-url.js';
 import {buildURL} from '../helpers/build-url.js';
 import {callRaw} from '../helpers/call-raw.js';
 import type {AuthTokenData, IRegistryConnectionProvider, OCIImageConfiguration, OCIImageManifest} from '../types.js';
+import {DefaultRegistryProvider} from './default-registry-provider.js';
 
 /** @module DockerRegistryClient */
 
 /**
  * @implements {IRegistryConnectionProvider}
  */
-export class DockerRegistryProvider implements IRegistryConnectionProvider {
+export class DockerRegistryProvider extends DefaultRegistryProvider implements IRegistryConnectionProvider {
 	registryHost = 'registry.docker.com';
 
-	public get registryUsesAuthentication() {
-		return true;
+	constructor() {
+		super('registry.docker.com');
 	}
 
 	async getTokenFromAuthService(imageName?: string): Promise<{token: string; issued: string; expiry: number}> {
