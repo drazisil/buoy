@@ -22,6 +22,7 @@ import {gunzipSync} from 'node:zlib';
 import {request} from 'undici';
 import sanitize from 'sanitize-filename';
 import {extract} from 'tar-fs';
+import createDebugLogger from 'debug';
 import {buildHeaders} from '../helpers/build-headers.js';
 import {buildURL} from '../helpers/build-url.js';
 import {checkImageName} from '../helpers/check-image-name.js';
@@ -29,6 +30,8 @@ import {checkImageName} from '../helpers/check-image-name.js';
 import type {AuthOptions, AuthTokenData, IRegistryConnectionProvider, OCIImageConfiguration, OCIImageManifest} from '../types.js';
 import {buildAuthURL} from '../helpers/build-auth-url.js';
 import {callRaw} from '../helpers/call-raw.js';
+
+const debug = createDebugLogger('buoy');
 
 /** @module ContainerRegistryProvider */
 
@@ -52,9 +55,12 @@ export class DefaultRegistryProvider implements IRegistryConnectionProvider {
 	};
 
 	registryHost: string;
+	debug: createDebugLogger.Debugger;
+
 	protected _imageName = '';
 
 	constructor(host: string) {
+		this.debug = debug;
 		this.registryHost = host;
 	}
 
@@ -68,7 +74,7 @@ export class DefaultRegistryProvider implements IRegistryConnectionProvider {
 
 		const iurl = buildAuthURL(this.authOptions.authHost, queryParameters);
 
-		console.log(`Request URL: ${iurl}`);
+		debug(`Request URL: ${iurl}`);
 
 		const apiResponse = await request(iurl.toString(), {maxRedirections: 1});
 
@@ -99,17 +105,17 @@ export class DefaultRegistryProvider implements IRegistryConnectionProvider {
 			host: this.registryHost,
 			version: 'v2',
 			namespace: imageName,
-			endpoint: 'tags/list',
-			reference: '',
+			endpoint: 'tags',
+			reference: 'list',
 		});
 
-		console.log(`Request URL: ${url}`);
+		this.debug(`Request URL: ${url}`);
 
 		const headers = buildHeaders(this.registryUsesAuthentication, tokenData.token);
 
 		const apiResponse = await callRaw(url, headers);
 
-		console.log(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
+		this.debug(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
 
 		const {tags} = await apiResponse.body.json() as {tags: string[]};
 
@@ -125,13 +131,13 @@ export class DefaultRegistryProvider implements IRegistryConnectionProvider {
 			reference,
 		});
 
-		console.log(`Request URL: ${url}`);
+		this.debug(`Request URL: ${url}`);
 
 		const headers = buildHeaders(this.registryUsesAuthentication, tokenData.token);
 
 		const apiResponse = await callRaw(url, headers);
 
-		console.log(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
+		this.debug(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
 
 		return await apiResponse.body.json() as OCIImageManifest;
 	}
@@ -145,13 +151,13 @@ export class DefaultRegistryProvider implements IRegistryConnectionProvider {
 			reference: digest,
 		});
 
-		console.log(`Request URL: ${url}`);
+		this.debug(`Request URL: ${url}`);
 
 		const headers = buildHeaders(this.registryUsesAuthentication, tokenData.token);
 
 		const apiResponse = await callRaw(url, headers);
 
-		console.log(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
+		this.debug(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
 
 		if (apiResponse.headers['content-type'] !== 'application/octet-stream') {
 			throw new Error('Not able to pull a signed manifest');
@@ -199,7 +205,7 @@ export class DefaultRegistryProvider implements IRegistryConnectionProvider {
 			reference: layerSHA,
 		});
 
-		console.log(`pulling layer: ${layerSHA}`);
+		this.debug(`pulling layer: ${layerSHA}`);
 
 		const headers = buildHeaders(this.registryUsesAuthentication, tokenData.token);
 
@@ -222,7 +228,7 @@ export class DefaultRegistryProvider implements IRegistryConnectionProvider {
 	async fetchLayerFromRegistry(manifest: OCIImageManifest, index: number, layerSHA: string, tag: string) {
 		const bodyBuffer = await this.getLayerFromRegistry(this.imageName, layerSHA, this.tokenData);
 
-		console.log(`Gzipped length: ${bodyBuffer.byteLength}`);
+		this.debug(`Gzipped length: ${bodyBuffer.byteLength}`);
 		const userHomeDir = userInfo().homedir;
 		const filePath = join(userHomeDir, '.buoy', this.imageName, sanitize(tag));
 
@@ -278,7 +284,7 @@ async function writeLayerToFS(filePath: string, bodyBuffer: Buffer): Promise<voi
 
 		const unGZippedBlob = gunzipSync(bodyBuffer);
 
-		console.log(`Ungzipped length: ${unGZippedBlob.byteLength}`);
+		debug(`Ungzipped length: ${unGZippedBlob.byteLength}`);
 
 		try {
 			Stream.Readable.from(unGZippedBlob).pipe(extract(filePath, {

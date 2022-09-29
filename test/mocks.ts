@@ -13,12 +13,18 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import type {OCIContentDescriptor, OCIImageManifest} from '../src/types';
 
-import type {OCIImageManifest} from '../src/types';
-
-export const mockImageManifest: OCIImageManifest = {
-	schemaVersion: 0,
-	mediaType: '',
+export const mockLayer: OCIContentDescriptor = {
+	mediaType: 'application',
+	digest: 'sha256:8675309',
+	size: 2,
+};
+export const mockManifest: OCIImageManifest = {
+	schemaVersion: 2,
+	mediaType: 'application/vnd.openstack.v1+json',
 	config: {},
-	layers: [],
+	layers: [
+		mockLayer,
+	],
 };

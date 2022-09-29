@@ -18,9 +18,12 @@
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {userInfo} from 'node:os';
 import {join} from 'node:path/posix';
+import {inspect} from 'node:util';
+import createDebugLogger from 'debug';
 import {registryConfigurations, DefaultRegistryProvider} from './provider/index.js';
-import type {IRegistryConnectionProvider} from './types.js';
 import {getTagfromUser, getImageNameFromUser, pickRegistryFromUser, checkImageName} from './index.js';
+
+const debug = createDebugLogger('buoy');
 
 const registryConfiguration = await pickRegistryFromUser(registryConfigurations);
 
@@ -59,7 +62,7 @@ const imageManifest = await registry.fetchImageManifestForTag(selectedTag);
 const layerChoices = [];
 
 for (const layer of imageManifest.layers) {
-	layerChoices.push({title: layer.digest});
+	layerChoices.push({title: layer.digest, digest: layer.digest});
 }
 
 layerChoices.reverse();
@@ -78,8 +81,10 @@ writeFileSync(`${savePath}/config.manifest.json`, JSON.stringify(configManifest)
 
 const results = [];
 
+debug(inspect(layerChoices));
+
 for (const [index, {title: layerSHA}] of layerChoices.entries()) {
-	results.push(registry.fetchLayerFromRegistry(imageManifest, index, layerSHA.digest, selectedTag));
+	results.push(registry.fetchLayerFromRegistry(imageManifest, index, layerSHA, selectedTag));
 }
 
 await Promise.all(results);

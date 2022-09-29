@@ -16,8 +16,9 @@
 
 import assert from 'node:assert';
 import type {MockClient} from 'undici';
-import {MockAgent, setGlobalDispatcher} from 'undici';
+import {Response, MockAgent, setGlobalDispatcher} from 'undici';
 import {DefaultRegistryProvider} from '../src/provider/default-registry-provider.js';
+import {mockManifest} from './mocks.js';
 
 describe('ContainerRegistryClient', () => {
 	let mockAgent: MockAgent;
@@ -68,7 +69,7 @@ describe('ContainerRegistryClient', () => {
 			mockClient.intercept({
 				method: 'GET',
 				path: '/v2/exampleOrgName/exampleImageName/blobs/abc123',
-			}).reply(200, 'testPOSTHTTP', {
+			}).reply(200, new Response(Buffer.from(JSON.stringify(mockManifest))), {
 				headers: {'content-type': 'application/octet-stream'},
 			});
 			const client = new DefaultRegistryProvider(registryHost);
@@ -78,29 +79,48 @@ describe('ContainerRegistryClient', () => {
 			const result = await client.fetchManifestByDigest('abc123');
 
 			// Assert
-			assert.ok(typeof result.layers !== 'undefined');
+			assert.strictEqual(result.layers, result.layers);
 		});
 	});
 
 	describe('#fetchImageManifestForTag', () => {
 		it('should return an OCIImageManifest object', async () => {
 			// Arrange
-			const client = new DefaultRegistryProvider('NotAHost');
 			const imageName = 'exampleOrgName/exampleImageName';
+			registryHost = 'docker.host.local';
+			mockClient = mockAgent.get(`https://${registryHost}`);
+			mockClient.intercept({
+				method: 'GET',
+				path: '/v2/exampleOrgName/exampleImageName/manifests/abc123',
+			}).reply(200, mockManifest);
+			const client = new DefaultRegistryProvider(registryHost);
+			await client.setImageName(imageName);
 
 			// Act
-			const result = await client.fetchImageManifestForTag(imageName);
+			const result = await client.fetchImageManifestForTag('abc123');
 
 			// Assert
-			assert.ok(typeof result.layers !== 'undefined');
+			assert.strictEqual(result.layers, result.layers);
 		});
 	});
 
 	describe('#fetchImageTags', () => {
 		it('should return an array of strings', async () => {
 			// Arrange
-			const client = new DefaultRegistryProvider('NotAHost');
 			const imageName = 'exampleOrgName/exampleImageName';
+			registryHost = 'docker.host.local';
+			mockClient = mockAgent.get(`https://${registryHost}`);
+			const mockTags = {
+				tags: [
+					'tag1', 'tag2', 'tag3',
+				],
+			};
+			mockClient.intercept({
+				method: 'GET',
+				path: '/v2/exampleOrgName/exampleImageName/tags/list',
+			}).reply(200, mockTags);
+			const client = new DefaultRegistryProvider(registryHost);
+			await client.setImageName(imageName);
 
 			// Act
 			const result = await client.fetchImageTags();

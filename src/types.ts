@@ -51,7 +51,7 @@ export type OCIImageManifest = {
 	schemaVersion: number;
 	mediaType: string;
 	config: Record<string, string>;
-	layers: Array<Record<string, OCIContentDescriptor>>;
+	layers: OCIContentDescriptor[];
 	subject?: Record<string, string>;
 	annotations?: Record<string, string>;
 };

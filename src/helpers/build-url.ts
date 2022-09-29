@@ -1,4 +1,3 @@
-
 // Buoy is a image layer scanner
 // Copyright (C) 2022  Drazi Crendraven
 //
@@ -14,6 +13,9 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import createDebugLogger from 'debug';
+
+const debug = createDebugLogger('buoy');
 /**
  * Used by {@link buildURL}
  * @typedef {Object} BuildOptions
@@ -38,5 +40,6 @@ export type BuildOptions = {
  */
 
 export function buildURL({host, version, namespace, endpoint, reference}: BuildOptions): string {
+	debug(`URL parts: ${host}, ${version}, ${namespace}, ${endpoint}, ${reference}`);
 	return `https://${host}/${version}/${namespace}/${endpoint}/${reference}`;
 }

@@ -19,7 +19,7 @@ import {buildHeaders} from '../helpers/build-headers.js';
 import {buildAuthURL} from '../helpers/build-auth-url.js';
 import {buildURL} from '../helpers/build-url.js';
 import {callRaw} from '../helpers/call-raw.js';
-import type {AuthTokenData, IRegistryConnectionProvider, OCIImageConfiguration, OCIImageManifest} from '../types.js';
+import type {AuthOptions, AuthTokenData, IRegistryConnectionProvider, OCIImageConfiguration, OCIImageManifest} from '../types.js';
 import {DefaultRegistryProvider} from './default-registry-provider.js';
 
 /** @module DockerRegistryClient */
@@ -29,18 +29,24 @@ import {DefaultRegistryProvider} from './default-registry-provider.js';
  */
 export class DockerRegistryProvider extends DefaultRegistryProvider implements IRegistryConnectionProvider {
 	registryHost = 'registry.docker.com';
+	registryUsesAuthentication = true;
+	authOptions: AuthOptions = {
+		usingAuth: true,
+		authHost: 'auth.docker.io',
+		authService: 'registry.docker.io',
+	};
 
 	constructor() {
 		super('registry.docker.com');
 	}
 
-	async getTokenFromAuthService(imageName?: string): Promise<{token: string; issued: string; expiry: number}> {
+	async getTokenFromAuthService(imageName: string): Promise<{token: string; issued: string; expiry: number}> {
 		const scope = `repository:${imageName}:pull`;
-		const queryParameters = {service: 'registry.docker.io', scope};
+		const queryParameters = {service: this.authOptions.authService, scope};
 
-		const iurl = buildAuthURL('https://auth.docker.io', queryParameters);
+		const iurl = buildAuthURL(this.authOptions.authHost, queryParameters);
 
-		console.log(`Request URL: ${iurl}`);
+		this.debug(`Request URL: ${iurl}`);
 
 		const apiResponse = await request(iurl.toString(), {maxRedirections: 1});
 
@@ -75,13 +81,13 @@ export class DockerRegistryProvider extends DefaultRegistryProvider implements I
 			reference: '',
 		});
 
-		console.log(`Request URL: ${url}`);
+		this.debug(`Request URL: ${url}`);
 
 		const headers = buildHeaders(this.registryUsesAuthentication, tokenData.token);
 
 		const apiResponse = await callRaw(url, headers);
 
-		console.log(`Content type: ${apiResponse.headers['content-type']}`);
+		this.debug(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
 
 		const {tags} = await apiResponse.body.json() as {tags: string[]};
 
@@ -97,13 +103,13 @@ export class DockerRegistryProvider extends DefaultRegistryProvider implements I
 			reference,
 		});
 
-		console.log(`Request URL: ${url}`);
+		this.debug(`Request URL: ${url}`);
 
 		const headers = buildHeaders(this.registryUsesAuthentication, tokenData.token);
 
 		const apiResponse = await callRaw(url, headers);
 
-		console.log(`Content type: ${apiResponse.headers['content-type']}`);
+		console.log(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
 
 		return await apiResponse.body.json() as OCIImageManifest;
 	}
@@ -117,13 +123,13 @@ export class DockerRegistryProvider extends DefaultRegistryProvider implements I
 			reference: digest,
 		});
 
-		console.log(`Request URL: ${url}`);
+		this.debug(`Request URL: ${url}`);
 
 		const headers = buildHeaders(this.registryUsesAuthentication, tokenData.token);
 
 		const apiResponse = await callRaw(url, headers);
 
-		console.log(`Content type: ${apiResponse.headers['content-type']}`);
+		this.debug(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
 
 		if (apiResponse.headers['content-type'] !== 'application/octet-stream') {
 			throw new Error('Not able to pull a signed manifest');
@@ -145,7 +151,7 @@ export class DockerRegistryProvider extends DefaultRegistryProvider implements I
 			reference: layerSHA,
 		});
 
-		console.log(`pulling layer: ${layerSHA}`);
+		this.debug(`pulling layer: ${layerSHA}`);
 
 		const headers = buildHeaders(this.registryUsesAuthentication, tokenData.token);
 
