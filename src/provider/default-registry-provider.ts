@@ -171,9 +171,9 @@ export class DefaultRegistryProvider implements IRegistryConnectionProvider {
 	}
 
 	/**
-     *
-     * @returns {boolean} If the current timestamp is greater then the expiry
-     */
+	 *
+	 * @returns {boolean} If the current timestamp is greater then the expiry
+	 */
 	isTokenValid(): boolean {
 		if (this.tokenData.issued === '') {
 			return false;
