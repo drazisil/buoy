@@ -30,7 +30,7 @@ export type OCIContentDescriptor = {
 	mediaType: string;
 	digest: string;
 	size: number;
-	urls?: Record<string, string>;
+	urls?: string[];
 	annotations?: Record<string, string>;
 	data?: string;
 	artifactType?: string;
