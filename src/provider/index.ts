@@ -13,12 +13,31 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import type {RegistryConfiguration} from '../types.js';
+import {DockerRegistryProvider} from './docker-registry-provider.js';
 
-import type {OCIImageManifest} from '../src/types';
+export {DefaultRegistryProvider} from './default-registry-provider.js';
 
-export const mockImageManifest: OCIImageManifest = {
-	schemaVersion: 0,
-	mediaType: '',
-	config: {},
-	layers: [],
-};
+export const registryConfigurations: RegistryConfiguration[] = [
+	{
+		title: 'registry.docker.com',
+		host: 'registry.docker.com',
+		usesDefaultProvider: false,
+		customRegistryProvider: new DockerRegistryProvider(),
+		authOptions: {
+			usingAuth: true,
+			authHost: 'https://auth.docker.io',
+			authService: 'registry.docker.io',
+		},
+	},
+	{
+		title: 'us-docker.pkg.dev',
+		host: 'us-docker.pkg.dev',
+		usesDefaultProvider: true,
+		authOptions: {
+			usingAuth: false,
+			authHost: '',
+			authService: '',
+		},
+	},
+];

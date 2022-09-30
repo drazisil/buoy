@@ -13,31 +13,59 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import {mkdirSync} from 'node:fs';
+import {writeFile} from 'node:fs/promises';
+import {userInfo} from 'node:os';
+import {join} from 'node:path/posix';
+import {Stream} from 'node:stream';
+import {gunzipSync} from 'node:zlib';
 import {request} from 'undici';
+import sanitize from 'sanitize-filename';
+import {extract} from 'tar-fs';
+import createDebugLogger from 'debug';
 import {buildHeaders} from '../helpers/build-headers.js';
-import {buildAuthURL} from '../helpers/build-auth-url.js';
 import {buildURL} from '../helpers/build-url.js';
-import {callRaw} from '../helpers/call-raw.js';
-import type {AuthOptions, AuthTokenData, IRegistryConnectionProvider, OCIImageConfiguration, OCIImageManifest} from '../types.js';
-import {DefaultRegistryProvider} from './default-registry-provider.js';
+import {checkImageName} from '../helpers/check-image-name.js';
 
-/** @module DockerRegistryClient */
+import type {AuthOptions, AuthTokenData, IRegistryConnectionProvider, OCIImageConfiguration, OCIImageManifest} from '../types.js';
+import {buildAuthURL} from '../helpers/build-auth-url.js';
+import {callRaw} from '../helpers/call-raw.js';
+
+const debug = createDebugLogger('buoy');
+
+/** @module ContainerRegistryProvider */
 
 /**
- * @implements {IRegistryConnectionProvider}
+ * A generic container registry client
+ *
+ * Supports reading
  */
-export class DockerRegistryProvider extends DefaultRegistryProvider implements IRegistryConnectionProvider {
-	registryHost = 'registry.docker.com';
-	registryUsesAuthentication = true;
+export class DefaultRegistryProvider implements IRegistryConnectionProvider {
+	registryUsesAuthentication = false;
 	authOptions: AuthOptions = {
-		usingAuth: true,
-		authHost: 'auth.docker.io',
-		authService: 'registry.docker.io',
+		usingAuth: false,
+		authHost: '',
+		authService: '',
 	};
 
-	constructor() {
-		super('registry.docker.com');
+	tokenData: AuthTokenData = {
+		token: '',
+		issued: '',
+		expiry: 0,
+	};
+
+	registryHost: string;
+	debug: createDebugLogger.Debugger;
+
+	protected _imageName = '';
+
+	constructor(host: string) {
+		this.debug = debug;
+		this.registryHost = host;
+	}
+
+	get imageName(): string {
+		return this._imageName;
 	}
 
 	async getTokenFromAuthService(imageName: string): Promise<{token: string; issued: string; expiry: number}> {
@@ -46,7 +74,7 @@ export class DockerRegistryProvider extends DefaultRegistryProvider implements I
 
 		const iurl = buildAuthURL(this.authOptions.authHost, queryParameters);
 
-		this.debug(`Request URL: ${iurl}`);
+		debug(`Request URL: ${iurl}`);
 
 		const apiResponse = await request(iurl.toString(), {maxRedirections: 1});
 
@@ -77,8 +105,8 @@ export class DockerRegistryProvider extends DefaultRegistryProvider implements I
 			host: this.registryHost,
 			version: 'v2',
 			namespace: imageName,
-			endpoint: 'tags/list',
-			reference: '',
+			endpoint: 'tags',
+			reference: 'list',
 		});
 
 		this.debug(`Request URL: ${url}`);
@@ -109,7 +137,7 @@ export class DockerRegistryProvider extends DefaultRegistryProvider implements I
 
 		const apiResponse = await callRaw(url, headers);
 
-		console.log(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
+		this.debug(`Content type: ${apiResponse.headers['content-type'] ?? ''}`);
 
 		return await apiResponse.body.json() as OCIImageManifest;
 	}
@@ -138,8 +166,34 @@ export class DockerRegistryProvider extends DefaultRegistryProvider implements I
 		return apiResponse.body.json() as Promise<OCIImageManifest>;
 	}
 
-	async getImageConfigurationFromRegistry(imageName: string): Promise<OCIImageConfiguration> {
-		throw new Error('Not implimented');
+	async getImageConfigurationFromRegistry(imageName: string, tokenData: AuthTokenData): Promise<OCIImageConfiguration> {
+		throw new Error('Not implemented');
+	}
+
+	/**
+	 *
+	 * @returns {boolean} If the current timestamp is greater then the expiry
+	 */
+	isTokenValid(): boolean {
+		if (this.tokenData.issued === '') {
+			return false;
+		}
+
+		const issuedDate = new Date(this.tokenData.issued);
+		const expiryDate = issuedDate.setSeconds(issuedDate.getSeconds() + this.tokenData.expiry);
+		return Date.now() < expiryDate;
+	}
+
+	/**
+     *
+     * @param {string} imageName
+     */
+	async setImageName(imageName: string): Promise<void> {
+		checkImageName(imageName);
+		this._imageName = imageName;
+		if (this.authOptions.usingAuth) {
+			await this.updateTokenFromAuthServiceIfNeeded(imageName);
+		}
 	}
 
 	async getLayerFromRegistry(imageName: string, layerSHA: string, tokenData: AuthTokenData): Promise<Buffer> {
@@ -165,4 +219,81 @@ export class DockerRegistryProvider extends DefaultRegistryProvider implements I
 
 		return Buffer.from(bodyBits);
 	}
+
+	/**
+	 * @external undici.Dispatcher.ResponseData
+	 * @see {@link https://github.com/nodejs/undici/blob/main/docs/api/Dispatcher.md#parameter-responsedata}
+	  */
+
+	async fetchLayerFromRegistry(manifest: OCIImageManifest, index: number, layerSHA: string, tag: string) {
+		const bodyBuffer = await this.getLayerFromRegistry(this.imageName, layerSHA, this.tokenData);
+
+		this.debug(`Gzipped length: ${bodyBuffer.byteLength}`);
+		const userHomeDir = userInfo().homedir;
+		const filePath = join(userHomeDir, '.buoy', this.imageName, sanitize(tag));
+
+		mkdirSync(filePath, {recursive: true});
+
+		const layerFilePath = `${filePath}/${index}_${layerSHA}`;
+
+		await writeLayerToFS(layerFilePath, bodyBuffer);
+	}
+
+	/**
+	 * Fetch a manifest from the registry by it's digest
+	 * @param {string} digest
+	 * @returns {Promise<OCIImageManifest>}
+	 */
+	async fetchManifestByDigest(digest: string): Promise<OCIImageManifest> {
+		return this.getImageManifestFromRegistryByDigest(this.imageName, digest, this.tokenData);
+	}
+
+	/**
+	 *
+	 * @param {string} tag
+	 * @returns {Promise<OCIImageManifest>}
+	 */
+	async fetchImageManifestForTag(tag: string): Promise<OCIImageManifest> {
+		return this.getImageManifestFromRegistry(this.imageName, tag, this.tokenData);
+	}
+
+	/**
+	 * Fetch list of tags for image from registry
+	 * @returns {Promise<string[]>}
+	 */
+	async fetchImageTags(): Promise<string[]> {
+		return this.getTagsFromRegistry(this.imageName, this.tokenData);
+	}
+
+	/**
+     *
+     * @param {string} imageName
+     */
+	private async updateTokenFromAuthServiceIfNeeded(imageName: string): Promise<void> {
+		if (!this.isTokenValid()) {
+			this.tokenData = await this.getTokenFromAuthService(imageName);
+		}
+	}
 }
+
+async function writeLayerToFS(filePath: string, bodyBuffer: Buffer): Promise<void> {
+	if (bodyBuffer.byteLength === 32) {
+		await writeFile(`${filePath}.empty`, Buffer.alloc(0));
+	} else {
+		await writeFile(`${filePath}.gz`, bodyBuffer);
+
+		const unGZippedBlob = gunzipSync(bodyBuffer);
+
+		debug(`Ungzipped length: ${unGZippedBlob.byteLength}`);
+
+		try {
+			Stream.Readable.from(unGZippedBlob).pipe(extract(filePath, {
+				dmode: 0o555,
+				fmode: 0o444, // All files should be readable
+			}));
+		} catch (error: unknown) {
+			throw new Error(`Error extracting: ${String(error)}`);
+		}
+	}
+}
+

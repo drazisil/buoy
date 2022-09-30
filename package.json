@@ -10,7 +10,8 @@
   },
   "type": "module",
   "scripts": {
-    "clean": "rm -rf tmp/** && touch tmp/.gitkeep",
+    "build": "xo --fix && tsc --build",
+    "clean": "rm -rf ~/.buoy/**",
     "docs": "rm -rf out && ./node_modules/.bin/jsdoc -t jsdoc-template -c jsdocconf.json --verbose -R README.md -r .",
     "test": "xo && c8 -x jsdoc-template -x out -x test -x built -x coverage -r text -r cobertura -r html --all mocha"
   },
@@ -18,6 +19,7 @@
   "author": "",
   "license": "AGPL-3.0-only",
   "devDependencies": {
+    "@types/debug": "^4.1.7",
     "@types/mocha": "10.0.0",
     "@types/node": "18.7.13",
     "@types/prompts": "2.0.14",
@@ -54,6 +56,7 @@
     }
   },
   "dependencies": {
+    "debug": "^4.3.4",
     "prompts": "2.4.2",
     "sanitize-filename": "^1.6.3",
     "tar-fs": "2.1.1",

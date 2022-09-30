@@ -18,20 +18,12 @@ import assert from 'node:assert';
 import {buildAuthURL} from '../src/helpers/build-auth-url.js';
 
 describe('buildAuthURL()', () => {
-	it('should throw when passed an invalid host', () => {
-		// Arrange
-		const expectedURL = 'hello';
-
-		// Assert
-		assert.throws(() => buildAuthURL('host', {a: '1', b: '2'}), /Invalid URL/);
-	});
-
 	it('should build a valid auth url', () => {
 		// Arrange
 		const expectedURL = 'https://test.local/token?a=1&b=2';
 
 		// Act
-		const results = buildAuthURL('https://test.local', {a: '1', b: '2'});
+		const results = buildAuthURL('test.local', {a: '1', b: '2'});
 
 		// Assert
 		assert.equal(results, expectedURL);

@@ -15,17 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * @global
- * @typedef {Object} AuthOptions
- * @prop {string} authHost
- * @prop {string} authService
- */
-export type AuthOptions = {
-	authHost: string;
-	authService: string;
-};
-
-/**
  * @see {@link https://github.com/opencontainers/image-spec/blob/e67f056ed21bd4d7360f3bed5ee393b0682eafe7/descriptor.md}
  * @global
  * @typedef {Object} OCIContentDescriptor
@@ -62,7 +51,7 @@ export type OCIImageManifest = {
 	schemaVersion: number;
 	mediaType: string;
 	config: Record<string, string>;
-	layers: Array<Record<string, OCIContentDescriptor>>;
+	layers: OCIContentDescriptor[];
 	subject?: Record<string, string>;
 	annotations?: Record<string, string>;
 };
@@ -161,6 +150,13 @@ export type OCIImageConfiguration = {
 
 export type OCIImageLayer = Buffer;
 
+/**
+ * Token used to access the registry
+ * @date 9/27/2022 - 6:32:49 PM
+ *
+ * @export
+ * @typedef {AuthTokenData}
+ */
 export type AuthTokenData = {
 	token: string;
 	issued: string;
@@ -170,10 +166,37 @@ export type AuthTokenData = {
 export type IRegistryConnectionProvider = {
 	readonly registryHost: string;
 	readonly registryUsesAuthentication: boolean;
-	getTokenFromAuthService: (imageName?: string) => Promise<{token: string; issued: string; expiry: number}>;
+	fetchImageManifestForTag: (tag: string) => Promise<OCIImageManifest>;
+	fetchImageTags: () => Promise<string[]>;
+	fetchLayerFromRegistry: (manifest: OCIImageManifest, index: number, layerSHA: string, tag: string) => Promise<void>;
+	fetchManifestByDigest: (digest: string) => Promise<OCIImageManifest>;
+	getTokenFromAuthService: (imageName: string) => Promise<{token: string; issued: string; expiry: number}>;
 	getTagsFromRegistry: (imageName: string, tokenData: AuthTokenData) => Promise<string[]>;
 	getImageManifestFromRegistry: (imageName: string, reference: string, tokenData: AuthTokenData) => Promise<OCIImageManifest>;
 	getImageManifestFromRegistryByDigest: (imageName: string, digest: string, tokenData: AuthTokenData) => Promise<OCIImageManifest>;
 	getImageConfigurationFromRegistry: (imageName: string, tokenData: AuthTokenData) => Promise<OCIImageConfiguration>;
 	getLayerFromRegistry: (imageName: string, layerSHA: string, tokenData: AuthTokenData) => Promise<OCIImageLayer>;
+	imageName: string;
+	isTokenValid: () => boolean;
+	setImageName: (imageName: string) => Promise<void>;
+};
+
+/**
+ * @global
+ * @typedef {Object} AuthOptions
+ * @prop {string} authHost
+ * @prop {string} authService
+ */
+export type AuthOptions = {
+	usingAuth: boolean;
+	authHost: string;
+	authService: string;
+};
+
+export type RegistryConfiguration = {
+	title: string;
+	host: string;
+	usesDefaultProvider: boolean;
+	customRegistryProvider?: IRegistryConnectionProvider;
+	authOptions: AuthOptions;
 };

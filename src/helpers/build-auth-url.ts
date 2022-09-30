@@ -1,4 +1,3 @@
-
 // Buoy is a image layer scanner
 // Copyright (C) 2022  Drazi Crendraven
 //
@@ -14,8 +13,14 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import {inspect} from 'node:util';
+import createDebugLogger from 'debug';
+
+const debug = createDebugLogger('buoy');
+
 export function buildAuthURL(host: string, queryParameters: Record<string, string>): string {
-	const iurl = new URL('token', host);
+	debug(`URL parts: ${host}, ${inspect(queryParameters)}`);
+	const iurl = new URL('token', `https://${host}`);
 
 	for (const queryParameter in queryParameters) {
 		if (Object.prototype.hasOwnProperty.call(queryParameters, queryParameter)) {

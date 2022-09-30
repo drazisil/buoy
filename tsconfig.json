@@ -1,12 +1,17 @@
 {
-    "compilerOptions": {
-      "outDir": "./built",
-      "allowJs": true,
-      "target": "es2022",
-      "module": "es2022",
-      "moduleResolution": "node",
-      "allowSyntheticDefaultImports": true,
-      "esModuleInterop": true
-    },
-    "include": ["./src/**/*"]
-  }
+  "compilerOptions": {
+    "strict": true,
+    "outDir": "./built",
+    "allowJs": true,
+    "target": "es2022",
+    "module": "es2022",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "./src/**/*",
+    "packages/types/types.ts",
+    "packages/provider/index.ts"
+  ]
+}

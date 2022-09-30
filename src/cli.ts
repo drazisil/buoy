@@ -16,30 +16,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import {mkdirSync, writeFileSync} from 'node:fs';
-import {ContainerRegistryClient} from './container-registry-client.js';
-
-import {DockerRegistryProvider} from './provider/docker-registry-provider.js';
-import type {RegistryConfig} from './index.js';
+import {userInfo} from 'node:os';
+import {join} from 'node:path/posix';
+import {inspect} from 'node:util';
+import createDebugLogger from 'debug';
+import {registryConfigurations, DefaultRegistryProvider} from './provider/index.js';
 import {getTagfromUser, getImageNameFromUser, pickRegistryFromUser, checkImageName} from './index.js';
 
-const registryConfigs: RegistryConfig[] = [
-	{
-		title: 'registry.docker.com',
-		authOptions: {
-			authHost: 'https://auth.docker.io',
-			authService: 'registry.docker.io',
-		},
-	},
-	// {
-	// 	title: 'us-docker.pkg.dev',
-	// 	authOptions: {
-	// 		authHost: 'https://us-docker.pkg.dev/v2',
-	// 		authService: 'us-docker.pkg.dev',
-	// 	},
-	// },
-];
+const debug = createDebugLogger('buoy');
 
-const registryChoice = await pickRegistryFromUser(registryConfigs);
+const registryConfiguration = await pickRegistryFromUser(registryConfigurations);
 
 const imageName = await getImageNameFromUser();
 
@@ -47,11 +33,11 @@ checkImageName(imageName);
 
 console.log(`Image name: ${imageName}`);
 
-const registry = ContainerRegistryClient.newWithProvider(new DockerRegistryProvider());
+const registry = !registryConfiguration.usesDefaultProvider && typeof registryConfiguration.customRegistryProvider !== 'undefined' ? registryConfiguration.customRegistryProvider : new DefaultRegistryProvider(registryConfiguration.host);
 
 await registry.setImageName(imageName);
 
-console.log(`Using host: ${registry.getHost()}`);
+console.log(`Using host: ${registry.registryHost}`);
 
 console.log(`Valid token: ${String(registry.isTokenValid())}`);
 
@@ -76,12 +62,14 @@ const imageManifest = await registry.fetchImageManifestForTag(selectedTag);
 const layerChoices = [];
 
 for (const layer of imageManifest.layers) {
-	layerChoices.push({title: layer.digest});
+	layerChoices.push({title: layer.digest, digest: layer.digest});
 }
 
 layerChoices.reverse();
 
-const savePath = `tmp/${registry.getImageName()}/${selectedTag}`;
+const userHomeDir = userInfo().homedir;
+
+const savePath = join(userHomeDir, '.buoy', registry.imageName, selectedTag);
 
 mkdirSync(savePath, {recursive: true});
 
@@ -92,6 +80,8 @@ const configManifest = await registry.fetchManifestByDigest(imageManifest.config
 writeFileSync(`${savePath}/config.manifest.json`, JSON.stringify(configManifest));
 
 const results = [];
+
+debug(inspect(layerChoices));
 
 for (const [index, {title: layerSHA}] of layerChoices.entries()) {
 	results.push(registry.fetchLayerFromRegistry(imageManifest, index, layerSHA, selectedTag));

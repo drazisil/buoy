@@ -13,10 +13,18 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import type {OCIContentDescriptor, OCIImageManifest} from '../src/types';
 
-export {buildURL} from './helpers/build-url.js';
-export {checkImageName} from './helpers/check-image-name.js';
-export {DefaultRegistryProvider as ContainerRegistryClient} from './provider/default-registry-provider.js';
-export {getImageNameFromUser} from './cli/get-image-name-from-user.js';
-export {getTagfromUser} from './cli/get-tag-from-user.js';
-export {pickRegistryFromUser} from './cli/pick-registry-from-user.js';
+export const mockLayer: OCIContentDescriptor = {
+	mediaType: 'application',
+	digest: 'sha256:8675309',
+	size: 2,
+};
+export const mockManifest: OCIImageManifest = {
+	schemaVersion: 2,
+	mediaType: 'application/vnd.openstack.v1+json',
+	config: {},
+	layers: [
+		mockLayer,
+	],
+};
