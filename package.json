@@ -21,7 +21,7 @@
   "devDependencies": {
     "@types/debug": "4.1.7",
     "@types/mocha": "10.0.1",
-    "@types/node": "18.11.17",
+    "@types/node": "18.11.18",
     "@types/prompts": "2.4.2",
     "@types/tar-fs": "2.0.1",
     "c8": "7.12.0",
@@ -34,7 +34,7 @@
     "xo": "0.53.1"
   },
   "volta": {
-    "node": "18.12.1"
+    "node": "18.13.0"
   },
   "xo": {
     "ignores": [
